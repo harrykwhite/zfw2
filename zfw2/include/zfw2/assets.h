@@ -14,7 +14,6 @@ class Assets
 public:
     Assets() = default;
     ~Assets();
-
     Assets(const Assets &other) = delete;
     Assets &operator=(const Assets &other) = delete;
 
@@ -48,6 +47,21 @@ private:
     std::unique_ptr<zfw2_common::Vec2DInt[]> m_texSizes;
 
     std::unique_ptr<GLID[]> m_shaderProgGLIDs;
+};
+
+class InternalShaderProgs
+{
+public:
+    InternalShaderProgs() = default;
+    ~InternalShaderProgs();
+    InternalShaderProgs(const InternalShaderProgs &other) = delete;
+    InternalShaderProgs &operator=(const InternalShaderProgs &other) = delete;
+
+    void load_all();
+
+private:
+    GLID m_spriteQuadProgGLID = 0;
+    GLID m_charQuadProgGLID = 0;
 };
 
 }

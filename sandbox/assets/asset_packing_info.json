@@ -2,5 +2,11 @@
     "tex_rfps": [
         "textures/square.png",
         "textures/rect.png"
-    ]
+    ],
+	"shader_progs": [
+		{
+			"vs_rfp": "shaders/test.vert",
+			"fs_rfp": "shaders/test.frag"
+		}
+	]
 }

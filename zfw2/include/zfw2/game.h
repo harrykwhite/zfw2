@@ -42,6 +42,7 @@ private:
     InputManager m_inputManager;
 
     Assets m_assets;
+    InternalShaderProgs m_internalShaderProgs;
 
     static inline double calc_valid_frame_dur(const double frameTime, const double frameTimeLast);
     static inline void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height);

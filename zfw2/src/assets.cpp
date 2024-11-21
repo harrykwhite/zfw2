@@ -7,6 +7,127 @@
 namespace zfw2
 {
 
+const std::string gk_spriteQuadVertShaderSrc = R"(#version 430 core
+
+layout (location = 0) in vec2 a_vert;
+layout (location = 1) in vec2 a_pos;
+layout (location = 2) in vec2 a_size;
+layout (location = 3) in float a_rot;
+layout (location = 4) in float a_tex_index;
+layout (location = 5) in vec2 a_tex_coord;
+layout (location = 6) in float a_alpha;
+
+out flat int v_tex_index;
+out vec2 v_tex_coord;
+out float v_alpha;
+
+uniform mat4 u_view;
+uniform mat4 u_proj;
+
+void main()
+{
+    float rot_cos = cos(a_rot);
+    float rot_sin = -sin(a_rot);
+
+    mat4 model = mat4(
+        vec4(a_size.x * rot_cos, a_size.x * rot_sin, 0.0f, 0.0f),
+        vec4(a_size.y * -rot_sin, a_size.y * rot_cos, 0.0f, 0.0f),
+        vec4(0.0f, 0.0f, 1.0f, 0.0f),
+        vec4(a_pos.x, a_pos.y, 0.0f, 1.0f)
+    );
+
+    gl_Position = u_proj * u_view * model * vec4(a_vert, 0.0f, 1.0f);
+
+    v_tex_index = int(a_tex_index);
+    v_tex_coord = a_tex_coord;
+    v_alpha = a_alpha;
+}
+)";
+
+const std::string gk_spriteQuadFragShaderSrc = R"(#version 430 core
+
+in flat int v_tex_index;
+in vec2 v_tex_coord;
+in float v_alpha;
+
+out vec4 o_frag_color;
+
+uniform sampler2D u_textures[32];
+
+void main()
+{
+    vec4 tex_color = texture(u_textures[v_tex_index], v_tex_coord);
+    o_frag_color = tex_color * vec4(1.0f, 1.0f, 1.0f, v_alpha);
+}
+)";
+
+const std::string gk_charQuadVertShaderSrc = R"(#version 430 core
+
+layout (location = 0) in vec2 a_vert;
+layout (location = 1) in vec2 a_tex_coord;
+
+out vec2 v_tex_coord;
+
+uniform vec2 u_pos;
+uniform float u_rot;
+uniform mat4 u_proj;
+
+void main()
+{
+    mat4 model = mat4(
+        vec4(1.0f, 0.0f, 0.0f, 0.0f),
+        vec4(0.0f, 1.0f, 0.0f, 0.0f),
+        vec4(0.0f, 0.0f, 1.0f, 0.0f),
+        vec4(u_pos.x, u_pos.y, 0.0f, 1.0f)
+    );
+
+    gl_Position = u_proj * model * vec4(a_vert, 0.0f, 1.0f);
+
+    v_tex_coord = a_tex_coord;
+}
+)";
+
+const std::string gk_charQuadFragShaderSrc = R"(#version 430 core
+
+in vec2 v_tex_coord;
+
+out vec4 o_frag_color;
+
+uniform vec4 u_blend;
+uniform sampler2D u_tex;
+
+void main()
+{
+    vec4 tex_color = texture(u_tex, v_tex_coord);
+    o_frag_color = tex_color * u_blend;
+}
+)";
+
+static GLID create_shader_prog_from_srcs(const std::string &vertShaderSrc, const std::string &fragShaderSrc)
+{
+    const GLID vertShaderGLID = glCreateShader(GL_VERTEX_SHADER);
+    const char *const vertShaderSrcPtr = vertShaderSrc.c_str();
+    glShaderSource(vertShaderGLID, 1, &vertShaderSrcPtr, nullptr);
+    glCompileShader(vertShaderGLID);
+
+    const GLID fragShaderGLID = glCreateShader(GL_FRAGMENT_SHADER);
+    const char *const fragShaderSrcPtr = fragShaderSrc.c_str();
+    glShaderSource(fragShaderGLID, 1, &fragShaderSrcPtr, nullptr);
+    glCompileShader(fragShaderGLID);
+
+    // TODO: Check for shader compilation errors.
+
+    const GLID progGLID = glCreateProgram();
+    glAttachShader(progGLID, vertShaderGLID);
+    glAttachShader(progGLID, fragShaderGLID);
+    glLinkProgram(progGLID);
+
+    glDeleteShader(fragShaderGLID);
+    glDeleteShader(vertShaderGLID);
+
+    return progGLID;
+}
+
 Assets::~Assets()
 {
     if (m_loaded)
@@ -75,48 +196,35 @@ bool Assets::load_all(const std::string &filename)
 
         for (int i = 0; i < m_shaderProgCnt; ++i)
         {
-            // Create the shaders using the sources in the file.
-            const std::array<GLID, 2> shaderGLIDs = {
-                glCreateShader(GL_VERTEX_SHADER),
-                glCreateShader(GL_FRAGMENT_SHADER)
-            };
+            const auto vertShaderSrcSize = read_from_ifs<int>(ifs);
+            std::string vertShaderSrc;
+            vertShaderSrc.reserve(vertShaderSrcSize);
+            ifs.read(vertShaderSrc.data(), vertShaderSrcSize);
 
-            for (int j = 0; j < shaderGLIDs.size(); ++j)
-            {
-                const auto srcSize = read_from_ifs<int>(ifs);
+            const auto fragShaderSrcSize = read_from_ifs<int>(ifs);
+            std::string fragShaderSrc;
+            fragShaderSrc.reserve(fragShaderSrcSize);
+            ifs.read(fragShaderSrc.data(), fragShaderSrcSize);
 
-                const auto src = std::make_unique<char[]>(srcSize);
-                ifs.read(src.get(), srcSize);
-
-                const char *const srcPtr = src.get();
-                glShaderSource(shaderGLIDs[j], 1, &srcPtr, nullptr);
-
-                glCompileShader(shaderGLIDs[j]);
-
-                // TODO: Check for a shader compilation error.
-            }
-
-            // Create the shader program using the shaders.
-            m_shaderProgGLIDs[i] = glCreateProgram();
-
-            for (int j = 0; j < shaderGLIDs.size(); ++j)
-            {
-                glAttachShader(m_shaderProgGLIDs[i], shaderGLIDs[j]);
-            }
-
-            glLinkProgram(m_shaderProgGLIDs[i]);
-
-            // Delete the shaders as they're no longer needed.
-            for (int j = 0; j < shaderGLIDs.size(); ++j)
-            {
-                glDeleteShader(shaderGLIDs[j]);
-            }
+            m_shaderProgGLIDs[i] = create_shader_prog_from_srcs(vertShaderSrc, fragShaderSrc);
         }
     }
 
     m_loaded = true;
 
     return true;
+}
+
+InternalShaderProgs::~InternalShaderProgs()
+{
+    glDeleteProgram(m_charQuadProgGLID);
+    glDeleteProgram(m_spriteQuadProgGLID);
+}
+
+void InternalShaderProgs::load_all()
+{
+    m_spriteQuadProgGLID = create_shader_prog_from_srcs(gk_spriteQuadVertShaderSrc, gk_spriteQuadFragShaderSrc);
+    m_charQuadProgGLID = create_shader_prog_from_srcs(gk_charQuadVertShaderSrc, gk_charQuadFragShaderSrc);
 }
 
 }
