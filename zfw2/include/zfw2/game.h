@@ -3,6 +3,7 @@
 #include <string>
 #include <GLFW/glfw3.h>
 #include <zfw2/input.h>
+#include <zfw2/assets.h>
 
 namespace zfw2
 {
@@ -19,16 +20,28 @@ public:
     void run();
 
 protected:
-    InputManager m_inputManager;
-
     virtual void on_init() = 0;
     virtual void on_tick() = 0;
+
+    const InputManager &get_input_manager() const
+    {
+        return m_inputManager;
+    }
+
+    const Assets &get_assets() const
+    {
+        return m_assets;
+    }
 
 private:
     const std::string m_windowTitle;
 
     bool m_glfwInitialized = false;
     GLFWwindow *m_glfwWindow = nullptr;
+
+    InputManager m_inputManager;
+
+    Assets m_assets;
 
     static inline double calc_valid_frame_dur(const double frameTime, const double frameTimeLast);
     static inline void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height);

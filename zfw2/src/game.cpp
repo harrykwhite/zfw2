@@ -64,6 +64,12 @@ void Game::run()
         return;
     }
 
+    // Load assets.
+    if (!m_assets.load_all("assets.zfw2dat"))
+    {
+        return;
+    }
+
     // Enable blending.
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

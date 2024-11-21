@@ -13,6 +13,8 @@ add_executable(sandbox
 	${PARENT_SRC_DIR}/vendor/glad/src/glad.c
 )
 
+target_compile_definitions(sandbox PRIVATE GLFW_INCLUDE_NONE)
+
 target_include_directories(sandbox PRIVATE
     ${PARENT_SRC_DIR}/zfw2/include
     ${PARENT_SRC_DIR}/zfw2_common/include

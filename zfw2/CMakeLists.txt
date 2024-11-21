@@ -17,6 +17,7 @@ add_library(zfw2 STATIC
     include/zfw2/assets.h
     include/zfw2/graphics.h
     include/zfw2/audio.h
+    include/zfw2/utils.h
     ${PARENT_SRC_DIR}/vendor/glad/include/glad/glad.h
     ${PARENT_SRC_DIR}/vendor/glad/include/KHR/khrplatform.h
 )
