@@ -1,6 +1,7 @@
 #include <zfw2/game.h>
 
 #include <glad/glad.h>
+#include <zfw2_common/assets.h>
 
 namespace zfw2
 {
@@ -65,7 +66,7 @@ void Game::run()
     }
 
     // Load assets.
-    if (!m_assets.load_all("assets.zfw2dat"))
+    if (!m_assets.load_all(zfw2_common::gk_assetsFileName))
     {
         return;
     }

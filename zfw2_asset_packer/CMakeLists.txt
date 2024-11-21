@@ -15,6 +15,7 @@ add_executable(zfw2_asset_packer
 target_include_directories(zfw2_asset_packer PRIVATE
 	${CMAKE_SOURCE_DIR}/zfw2_common/include
 	${CMAKE_SOURCE_DIR}/vendor/stb_image/include
+	${CMAKE_SOURCE_DIR}/vendor/nlohmann/include
 )
 
 target_link_libraries(zfw2_asset_packer PRIVATE Freetype::Freetype zfw2_common)

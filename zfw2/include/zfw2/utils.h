@@ -6,6 +6,7 @@
 namespace zfw2
 {
 
+using Byte = unsigned char;
 using GLID = GLuint;
 
 template<typename T>
