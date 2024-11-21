@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.30)
+
+project(zfw2)
+
+add_subdirectory(zfw2)
+add_subdirectory(zfw2_asset_packer)
+add_subdirectory(zfw2_common)
+add_subdirectory(sandbox)
