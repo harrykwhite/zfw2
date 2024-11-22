@@ -16,7 +16,7 @@ using SceneFactory = std::function<std::unique_ptr<Scene>(const Assets &assets, 
 class Scene
 {
 public:
-    Scene(const Assets &assets, const zfw2_common::Vec2DInt windowSize)
+    Scene(const Assets &assets, const zfw2_common::Vec2DInt windowSize, const Color bgColor = Color::create_black()) : m_renderer(bgColor)
     {
     }
 

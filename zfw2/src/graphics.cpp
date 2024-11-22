@@ -614,7 +614,7 @@ int RenderLayer::add_char_batch(const int slotCnt, const int fontIndex, const zf
 
 void Renderer::draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const
 {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(m_bgColor.r, m_bgColor.g, m_bgColor.b, m_bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
 
     for (const RenderLayer &layer : m_layers)

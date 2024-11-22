@@ -1,6 +1,6 @@
 #include "world_scene.h"
 
-WorldScene::WorldScene(const zfw2::Assets &assets, const zfw2_common::Vec2DInt windowSize) : Scene(assets, windowSize)
+WorldScene::WorldScene(const zfw2::Assets &assets, const zfw2_common::Vec2DInt windowSize) : Scene(assets, windowSize, zfw2::Color::create_green())
 {
     m_renderer.add_layer("Enemies", 128);
     m_renderer.add_layer("Player", 8);

@@ -199,6 +199,10 @@ private:
 class Renderer
 {
 public:
+    Renderer(const Color bgColor) : m_bgColor(bgColor)
+    {
+    }
+
     void draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const;
     SpriteBatchSlotKey take_any_sprite_batch_slot(const std::string &layerName, const int texIndex);
 
@@ -296,6 +300,8 @@ private:
     std::vector<RenderLayer> m_layers;
     std::unordered_map<std::string, int> m_layerNamesToIndexes;
     bool m_layersLocked = false;
+
+    const Color m_bgColor;
 };
 
 inline zfw2_common::Vec2D get_cam_to_screen_pos(const zfw2_common::Vec2D pos, const Camera &cam, const zfw2_common::Vec2DInt windowSize)

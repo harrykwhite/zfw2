@@ -128,6 +128,7 @@ void Game::run(const SceneFactory &initSceneFactory)
         }
 
         m_scene->draw(m_internalShaderProgs, m_assets, get_glfw_window_size());
+
         glfwSwapBuffers(m_glfwWindow);
     }
 }
