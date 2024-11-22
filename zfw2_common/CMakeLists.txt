@@ -5,6 +5,7 @@ add_library(zfw2_common STATIC
 
     include/zfw2_common/math.h
     include/zfw2_common/assets.h
+    include/zfw2_common/misc.h
 )
 
 target_include_directories(zfw2_common PRIVATE include)

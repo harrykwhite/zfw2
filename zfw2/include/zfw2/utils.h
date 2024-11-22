@@ -4,17 +4,17 @@
 #include <algorithm>
 #include <cassert>
 #include <glad/glad.h>
+#include <zfw2_common/misc.h>
 
 namespace zfw2
 {
 
-using Byte = unsigned char;
 using GLID = GLuint;
 
 class HeapBitset
 {
 public:
-    HeapBitset(const int byteCnt) : m_bytes(std::make_unique<Byte[]>(byteCnt)), m_byteCnt(byteCnt)
+    HeapBitset(const int byteCnt) : m_bytes(std::make_unique<zfw2_common::Byte[]>(byteCnt)), m_byteCnt(byteCnt)
     {
     }
 
@@ -51,7 +51,7 @@ public:
     }
 
 private:
-    std::unique_ptr<Byte[]> m_bytes;
+    std::unique_ptr<zfw2_common::Byte[]> m_bytes;
     int m_byteCnt;
 };
 

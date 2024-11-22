@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <zfw2_common/math.h>
+#include <zfw2_common/assets.h>
 #include "utils.h"
 
 namespace zfw2
@@ -37,16 +38,26 @@ public:
         return m_shaderProgGLIDs[index];
     }
 
+    inline const zfw2_common::FontData &get_font_data(const int index) const
+    {
+        assert(index >= 0 && index < m_fontCnt);
+        return m_fontDatas[index];
+    }
+
 private:
     bool m_loaded = false;
 
     int m_texCnt = 0;
     int m_shaderProgCnt = 0;
+    int m_fontCnt = 0;
 
     std::unique_ptr<GLID[]> m_texGLIDs;
     std::unique_ptr<zfw2_common::Vec2DInt[]> m_texSizes;
 
     std::unique_ptr<GLID[]> m_shaderProgGLIDs;
+
+    std::unique_ptr<GLID[]> m_fontTexGLIDs;
+    std::unique_ptr<zfw2_common::FontData[]> m_fontDatas;
 };
 
 class InternalShaderProgs

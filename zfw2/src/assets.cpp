@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <array>
-#include <zfw2_common/assets.h>
 
 namespace zfw2
 {
@@ -156,6 +155,7 @@ bool Assets::load_all(const std::string &filename)
     // Read asset counts from the header.
     m_texCnt = read_from_ifs<int>(ifs);
     m_shaderProgCnt = read_from_ifs<int>(ifs);
+    m_fontCnt = read_from_ifs<int>(ifs);
 
     //
     // Textures
@@ -207,6 +207,30 @@ bool Assets::load_all(const std::string &filename)
             ifs.read(fragShaderSrc.data(), fragShaderSrcSize);
 
             m_shaderProgGLIDs[i] = create_shader_prog_from_srcs(vertShaderSrc, fragShaderSrc);
+        }
+    }
+
+    //
+    // Fonts
+    //
+    if (m_fontCnt > 0)
+    {
+        m_fontTexGLIDs = std::make_unique<GLID[]>(m_fontCnt);
+        m_fontDatas = std::make_unique<zfw2_common::FontData[]>(m_fontCnt);
+
+        const int px_data_buf_size = zfw2_common::gk_texChannelCnt * zfw2_common::gk_texSizeLimit.x * zfw2_common::gk_texSizeLimit.y;
+        const auto px_data_buf = std::make_unique<unsigned char[]>(px_data_buf_size); // This is working space for temporarily storing the pixel data of each font texture.
+
+        for (int i = 0; i < m_fontCnt; ++i)
+        {
+            ifs.read(reinterpret_cast<char *>(&m_fontDatas[i]), sizeof(zfw2_common::FontData));
+
+            ifs.read(reinterpret_cast<char *>(px_data_buf.get()), zfw2_common::gk_texChannelCnt * m_texSizes[i].x * m_texSizes[i].y);
+
+            glBindTexture(GL_TEXTURE_2D, m_fontTexGLIDs[i]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_fontDatas[i].texSize.x, m_fontDatas[i].texSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
         }
     }
 

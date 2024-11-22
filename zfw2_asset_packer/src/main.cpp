@@ -41,6 +41,24 @@ static std::vector<ShaderProgPackingInfo> get_shader_prog_packing_infos_from_jso
     return packingInfos;
 }
 
+static std::vector<FontPackingInfo> get_font_packing_infos_from_json(const nlohmann::json &json)
+{
+    std::vector<FontPackingInfo> packingInfos;
+
+    if (json.contains("fonts"))
+    {
+        for (const auto &fonts : json["fonts"])
+        {
+            FontPackingInfo packingInfo;
+            packingInfo.relFilePath = fonts["rfp"];
+            packingInfo.ptSize = fonts["pt_size"];
+            packingInfos.emplace_back(packingInfo);
+        }
+    }
+
+    return packingInfos;
+}
+
 int main(const int argCnt, const char *const *const args)
 {
     if (argCnt > 3)
@@ -109,6 +127,7 @@ int main(const int argCnt, const char *const *const args)
     // Get asset packing information from the JSON.
     const std::vector<TexPackingInfo> texPackingInfos = get_tex_packing_infos_from_json(packingInfoJSON);
     const std::vector<ShaderProgPackingInfo> shaderProgPackingInfos = get_shader_prog_packing_infos_from_json(packingInfoJSON);
+    const std::vector<FontPackingInfo> fontPackingInfos = get_font_packing_infos_from_json(packingInfoJSON);
 
     // Close the packing information JSON file. (TODO: Do this via scoping.)
     packingInfoFileIS.close();
@@ -130,9 +149,13 @@ int main(const int argCnt, const char *const *const args)
     const int shaderProgCnt = shaderProgPackingInfos.size();
     assetsFileOS.write(reinterpret_cast<const char *>(&shaderProgCnt), sizeof(shaderProgCnt));
 
+    const int fontCnt = fontPackingInfos.size();
+    assetsFileOS.write(reinterpret_cast<const char *>(&fontCnt), sizeof(fontCnt));
+
     // Pack the assets.
     if (!pack_textures(texPackingInfos, assetsFileOS, assetsDir)
-        || !pack_shader_progs(shaderProgPackingInfos, assetsFileOS, assetsDir))
+        || !pack_shader_progs(shaderProgPackingInfos, assetsFileOS, assetsDir)
+        || !pack_fonts(fontPackingInfos, assetsFileOS, assetsDir))
     {
         std::remove(zfw2_common::gk_assetsFileName.c_str());
         return EXIT_FAILURE;

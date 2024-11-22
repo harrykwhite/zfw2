@@ -15,5 +15,12 @@ struct ShaderProgPackingInfo
     std::string fragShaderRFP;
 };
 
+struct FontPackingInfo
+{
+    std::string relFilePath;
+    int ptSize;
+};
+
 bool pack_textures(const std::vector<TexPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir);
 bool pack_shader_progs(const std::vector<ShaderProgPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir);
+bool pack_fonts(const std::vector<FontPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir);

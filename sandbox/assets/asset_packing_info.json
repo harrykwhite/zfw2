@@ -8,5 +8,19 @@
 			"vs_rfp": "shaders/test.vert",
 			"fs_rfp": "shaders/test.frag"
 		}
+	],
+	"fonts": [
+		{
+			"rfp": "fonts/eb_garamond.ttf",
+			"pt_size": 18
+		},
+		{
+			"rfp": "fonts/eb_garamond.ttf",
+			"pt_size": 24
+		},
+		{
+			"rfp": "fonts/eb_garamond.ttf",
+			"pt_size": 36
+		}
 	]
 }
