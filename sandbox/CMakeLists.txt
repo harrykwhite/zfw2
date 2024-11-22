@@ -8,9 +8,12 @@ get_filename_component(PARENT_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR} PATH)
 
 add_executable(sandbox
 	src/entry.cpp
-	src/test_scene.cpp
-	src/test_scene.h
+	src/main_menu_scene.cpp
+	src/world_scene.cpp
 	${PARENT_SRC_DIR}/vendor/glad/src/glad.c
+
+	src/main_menu_scene.h
+	src/world_scene.h
 )
 
 target_compile_definitions(sandbox PRIVATE GLFW_INCLUDE_NONE)

@@ -19,19 +19,6 @@ Game::~Game()
     }
 }
 
-class YeahScene : public Scene
-{
-public:
-    YeahScene(const Assets &assets, const zfw2_common::Vec2DInt windowSize) : Scene(assets, windowSize)
-    {
-    }
-
-    virtual void on_tick(const InputManager &inputManager, const Assets &assets)
-    {
-    
-    }
-};
-
 void Game::run(const SceneFactory &initSceneFactory)
 {
     //
@@ -124,8 +111,17 @@ void Game::run(const SceneFactory &initSceneFactory)
 
             do
             {
-                m_scene->on_tick(m_inputManager, m_assets);
+                SceneFactory sceneChangeFactory; // This will be assigned if a scene change is requested.
+
+                m_scene->on_tick(m_inputManager, m_assets, sceneChangeFactory);
+
+                if (sceneChangeFactory)
+                {
+                    m_scene = sceneChangeFactory(m_assets, get_glfw_window_size());
+                }
+
                 frameDurAccum -= gk_targTickDur;
+
                 ++i;
             }
             while (i < tickCnt);
