@@ -7,12 +7,128 @@ struct Vec2D
 {
     float x;
     float y;
+
+    Vec2D operator+(const Vec2D& other) const
+    {
+        return {x + other.x, y + other.y};
+    }
+
+    Vec2D operator-(const Vec2D& other) const
+    {
+        return {x - other.x, y - other.y};
+    }
+
+    Vec2D operator*(const float scalar) const
+    {
+        return {x * scalar, y * scalar};
+    }
+
+    Vec2D operator/(const float scalar) const
+    {
+        return {x / scalar, y / scalar};
+    }
+
+    bool operator==(const Vec2D& other) const
+    {
+        return x == other.x && y == other.y;
+    }
+
+    bool operator!=(const Vec2D& other) const
+    {
+        return !(*this == other);
+    }
+
+    Vec2D& operator+=(const Vec2D& other)
+    {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
+
+    Vec2D& operator-=(const Vec2D& other)
+    {
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
+
+    Vec2D& operator*=(const float scalar)
+    {
+        x *= scalar;
+        y *= scalar;
+        return *this;
+    }
+
+    Vec2D& operator/=(const float scalar)
+    {
+        x /= scalar;
+        y /= scalar;
+        return *this;
+    }
 };
 
 struct Vec2DInt
 {
     int x;
     int y;
+
+    Vec2DInt operator+(const Vec2DInt& other) const
+    {
+        return {x + other.x, y + other.y};
+    }
+
+    Vec2DInt operator-(const Vec2DInt& other) const
+    {
+        return {x - other.x, y - other.y};
+    }
+
+    Vec2DInt operator*(const int scalar) const
+    {
+        return {x * scalar, y * scalar};
+    }
+
+    Vec2DInt operator/(const int scalar) const
+    {
+        return {x / scalar, y / scalar};
+    }
+
+    bool operator==(const Vec2DInt& other) const
+    {
+        return x == other.x && y == other.y;
+    }
+
+    bool operator!=(const Vec2DInt& other) const
+    {
+        return !(*this == other);
+    }
+
+    Vec2DInt& operator+=(const Vec2DInt& other)
+    {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
+
+    Vec2DInt& operator-=(const Vec2DInt& other)
+    {
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
+
+    Vec2DInt& operator*=(const int scalar)
+    {
+        x *= scalar;
+        y *= scalar;
+        return *this;
+    }
+
+    Vec2DInt& operator/=(const int scalar)
+    {
+        x /= scalar;
+        y /= scalar;
+        return *this;
+    }
 };
 
 struct Matrix4x4
