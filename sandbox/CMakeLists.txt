@@ -8,8 +8,8 @@ get_filename_component(PARENT_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR} PATH)
 
 add_executable(sandbox
 	src/entry.cpp
-	src/game.cpp
-	src/game.h
+	src/test_scene.cpp
+	src/test_scene.h
 	${PARENT_SRC_DIR}/vendor/glad/src/glad.c
 )
 

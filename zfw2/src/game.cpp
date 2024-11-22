@@ -6,10 +6,6 @@
 namespace zfw2
 {
 
-Game::Game(const std::string &windowTitle) : m_windowTitle(windowTitle)
-{
-}
-
 Game::~Game()
 {
     if (m_glfwWindow)
@@ -23,7 +19,7 @@ Game::~Game()
     }
 }
 
-void Game::run()
+void Game::run(const SceneFactory initSceneFactory)
 {
     //
     // Initialisation
@@ -81,8 +77,8 @@ void Game::run()
     int glfwCallbackMouseScroll = 0; // This is an axis representing the scroll wheel movement. It is updated by the GLFW scroll callback and gets reset after a new input state is generated.
     glfwSetWindowUserPointer(m_glfwWindow, &glfwCallbackMouseScroll);
 
-    // Run the user-defined initialisation function.
-    on_init();
+    // Create the initial scene.
+    m_scene = initSceneFactory();
 
     // Show the window now that things have been set up.
     glfwShowWindow(m_glfwWindow);
@@ -96,6 +92,13 @@ void Game::run()
     while (!glfwWindowShouldClose(m_glfwWindow))
     {
         glfwPollEvents();
+
+        const zfw2_common::Vec2DInt windowSize = [this]()
+        {
+            zfw2_common::Vec2DInt size;
+            glfwGetWindowSize(m_glfwWindow, &size.x, &size.y);
+            return size;
+        }();
 
         const double frameTimeLast = frameTime;
         frameTime = glfwGetTime();
@@ -115,7 +118,7 @@ void Game::run()
 
             do
             {
-                on_tick();
+                m_scene->on_tick(m_inputManager, m_assets);
                 frameDurAccum -= gk_targTickDur;
                 ++i;
             }
@@ -124,22 +127,8 @@ void Game::run()
 
         // Render.
         glfwSwapBuffers(m_glfwWindow);
+        m_scene->draw(m_internalShaderProgs, m_assets, windowSize);
     }
-}
-
-inline double Game::calc_valid_frame_dur(const double frameTime, const double frameTimeLast)
-{
-    const double dur = frameTime - frameTimeLast;
-    return dur >= 0.0 && dur <= gk_targTickDur * 8.0 ? dur : 0.0;
-}
-
-inline void Game::glfw_window_size_callback(GLFWwindow *const window, const int width, const int height)
-{
-    glViewport(0, 0, width, height);
-}
-
-inline void Game::glfw_scroll_callback(GLFWwindow *const window, const double xOffs, const double yOffs)
-{
 }
 
 }

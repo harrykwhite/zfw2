@@ -19,7 +19,7 @@ public:
 
     bool load_all(const std::string &filename);
 
-    inline GLID get_tex_glid(const int index) const
+    inline GLID get_tex_gl_id(const int index) const
     {
         assert(index >= 0 && index < m_texCnt);
         return m_texGLIDs[index];
@@ -31,7 +31,7 @@ public:
         return m_texSizes[index];
     }
 
-    inline GLID get_shader_prog_glid(const int index) const
+    inline GLID get_shader_prog_gl_id(const int index) const
     {
         assert(index >= 0 && index < m_shaderProgCnt);
         return m_shaderProgGLIDs[index];
@@ -59,9 +59,22 @@ public:
 
     void load_all();
 
+    GLID get_sprite_quad_prog_gl_id() const
+    {
+        return m_spriteQuadProgGLID;
+    }
+
+    GLID get_char_quad_prog_gl_id() const
+    {
+        return m_charQuadProgGLID;
+    }
+
 private:
     GLID m_spriteQuadProgGLID = 0;
     GLID m_charQuadProgGLID = 0;
 };
+
+constexpr int gk_spriteQuadShaderProgVertCnt = 11;
+constexpr int gk_charQuadShaderProgVertCnt = 4;
 
 }
