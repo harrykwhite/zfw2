@@ -19,7 +19,20 @@ Game::~Game()
     }
 }
 
-void Game::run(const SceneFactory initSceneFactory)
+class YeahScene : public Scene
+{
+public:
+    YeahScene(const Assets &assets, const zfw2_common::Vec2DInt windowSize) : Scene(assets, windowSize)
+    {
+    }
+
+    virtual void on_tick(const InputManager &inputManager, const Assets &assets)
+    {
+    
+    }
+};
+
+void Game::run(const SceneFactory &initSceneFactory)
 {
     //
     // Initialisation
@@ -78,7 +91,7 @@ void Game::run(const SceneFactory initSceneFactory)
     glfwSetWindowUserPointer(m_glfwWindow, &glfwCallbackMouseScroll);
 
     // Create the initial scene.
-    m_scene = initSceneFactory();
+    m_scene = initSceneFactory(m_assets, get_glfw_window_size());
 
     // Show the window now that things have been set up.
     glfwShowWindow(m_glfwWindow);
@@ -92,13 +105,6 @@ void Game::run(const SceneFactory initSceneFactory)
     while (!glfwWindowShouldClose(m_glfwWindow))
     {
         glfwPollEvents();
-
-        const zfw2_common::Vec2DInt windowSize = [this]()
-        {
-            zfw2_common::Vec2DInt size;
-            glfwGetWindowSize(m_glfwWindow, &size.x, &size.y);
-            return size;
-        }();
 
         const double frameTimeLast = frameTime;
         frameTime = glfwGetTime();
@@ -125,9 +131,8 @@ void Game::run(const SceneFactory initSceneFactory)
             while (i < tickCnt);
         }
 
-        // Render.
+        m_scene->draw(m_internalShaderProgs, m_assets, get_glfw_window_size());
         glfwSwapBuffers(m_glfwWindow);
-        m_scene->draw(m_internalShaderProgs, m_assets, windowSize);
     }
 }
 

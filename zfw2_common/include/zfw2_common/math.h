@@ -56,4 +56,14 @@ struct Rect
     int height;
 };
 
+struct RectFloat
+{
+    float x;
+    float y;
+    float width;
+    float height;
+};
+
+constexpr float gk_pi = 3.14159265358979323846f;
+
 }

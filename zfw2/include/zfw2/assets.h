@@ -38,6 +38,12 @@ public:
         return m_shaderProgGLIDs[index];
     }
 
+    inline GLID get_font_tex_gl_id(const int index) const
+    {
+        assert(index >= 0 && index < m_fontCnt);
+        return m_fontTexGLIDs[index];
+    }
+
     inline const zfw2_common::FontData &get_font_data(const int index) const
     {
         assert(index >= 0 && index < m_fontCnt);

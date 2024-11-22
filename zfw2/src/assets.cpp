@@ -73,9 +73,12 @@ uniform mat4 u_proj;
 
 void main()
 {
+    float rot_cos = cos(u_rot);
+    float rot_sin = sin(u_rot);
+
     mat4 model = mat4(
-        vec4(1.0f, 0.0f, 0.0f, 0.0f),
-        vec4(0.0f, 1.0f, 0.0f, 0.0f),
+        vec4(rot_cos, rot_sin, 0.0f, 0.0f),
+        vec4(-rot_sin, rot_cos, 0.0f, 0.0f),
         vec4(0.0f, 0.0f, 1.0f, 0.0f),
         vec4(u_pos.x, u_pos.y, 0.0f, 1.0f)
     );
@@ -131,6 +134,8 @@ Assets::~Assets()
 {
     if (m_loaded)
     {
+        glDeleteTextures(m_fontCnt, m_fontTexGLIDs.get());
+
         for (int i = 0; i < m_shaderProgCnt; ++i)
         {
             glDeleteProgram(m_shaderProgGLIDs[i]);
@@ -216,6 +221,8 @@ bool Assets::load_all(const std::string &filename)
     if (m_fontCnt > 0)
     {
         m_fontTexGLIDs = std::make_unique<GLID[]>(m_fontCnt);
+        glGenTextures(m_fontCnt, m_fontTexGLIDs.get());
+
         m_fontDatas = std::make_unique<zfw2_common::FontData[]>(m_fontCnt);
 
         const int px_data_buf_size = zfw2_common::gk_texChannelCnt * zfw2_common::gk_texSizeLimit.x * zfw2_common::gk_texSizeLimit.y;
@@ -225,7 +232,7 @@ bool Assets::load_all(const std::string &filename)
         {
             ifs.read(reinterpret_cast<char *>(&m_fontDatas[i]), sizeof(zfw2_common::FontData));
 
-            ifs.read(reinterpret_cast<char *>(px_data_buf.get()), zfw2_common::gk_texChannelCnt * m_texSizes[i].x * m_texSizes[i].y);
+            ifs.read(reinterpret_cast<char *>(px_data_buf.get()), zfw2_common::gk_texChannelCnt * m_fontDatas[i].texSize.x * m_fontDatas[i].texSize.y);
 
             glBindTexture(GL_TEXTURE_2D, m_fontTexGLIDs[i]);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

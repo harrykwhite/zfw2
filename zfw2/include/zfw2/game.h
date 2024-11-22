@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <functional>
 #include <GLFW/glfw3.h>
 #include <zfw2/input.h>
 #include <zfw2/assets.h>
@@ -14,14 +13,6 @@ namespace zfw2
 constexpr int gk_targTicksPerSec = 60;
 constexpr double gk_targTickDur = 1.0 / gk_targTicksPerSec;
 
-using SceneFactory = std::function<std::unique_ptr<Scene>()>;
-
-template<typename T>
-SceneFactory create_scene_factory()
-{
-    return []() { return std::make_unique<T>(); };
-}
-
 class Game
 {
 public:
@@ -33,7 +24,7 @@ public:
     {
     }
 
-    void run(const SceneFactory initSceneFactory);
+    void run(const SceneFactory &initSceneFactory);
 
 private:
     const std::string m_windowTitle;
@@ -61,6 +52,13 @@ private:
 
     static inline void Game::glfw_scroll_callback(GLFWwindow *const window, const double xOffs, const double yOffs)
     {
+    }
+
+    inline zfw2_common::Vec2DInt get_glfw_window_size() const
+    {
+        int width, height;
+        glfwGetWindowSize(m_glfwWindow, &width, &height);
+        return {width, height};
     }
 };
 

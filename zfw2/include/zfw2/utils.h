@@ -11,16 +11,26 @@ namespace zfw2
 
 using GLID = GLuint;
 
-class HeapBitset
+constexpr inline int get_bit_to_byte_cnt(const int bitCnt)
+{
+    return (bitCnt + 7) & ~7;
+}
+
+class DynamicBitset
 {
 public:
-    HeapBitset(const int byteCnt) : m_bytes(std::make_unique<zfw2_common::Byte[]>(byteCnt)), m_byteCnt(byteCnt)
-    {
-    }
+    DynamicBitset() = default;
+    DynamicBitset(const int bitCnt);
 
+    void resize(const int bitCnt);
     int get_first_inactive_bit_index() const; // Returns -1 if all bits are active.
     bool is_full() const;
     bool is_clear() const;
+
+    inline int get_bit_cnt() const
+    {
+        return m_bitCnt;
+    }
 
     inline void fill()
     {
@@ -34,25 +44,26 @@ public:
 
     inline void activate_bit(const int bit_index)
     {
-        assert(bit_index >= 0 && bit_index < m_byteCnt * 8);
+        assert(bit_index >= 0 && bit_index < m_bitCnt);
         m_bytes[bit_index / 8] |= static_cast<unsigned char>(1) << (bit_index % 8);
     }
 
     inline void deactivate_bit(const int bit_index)
     {
-        assert(bit_index >= 0 && bit_index < m_byteCnt * 8);
+        assert(bit_index >= 0 && bit_index < m_bitCnt);
         m_bytes[bit_index / 8] &= ~(static_cast<unsigned char>(1) << (bit_index % 8));
     }
 
     inline bool is_bit_active(const int bit_index) const
     {
-        assert(bit_index >= 0 && bit_index < m_byteCnt * 8);
+        assert(bit_index >= 0 && bit_index < m_bitCnt);
         return m_bytes[bit_index / 8] & (static_cast<unsigned char>(1) << (bit_index % 8));
     }
 
 private:
     std::unique_ptr<zfw2_common::Byte[]> m_bytes;
-    int m_byteCnt;
+    int m_byteCnt = 0;
+    int m_bitCnt = 0;
 };
 
 template<typename T>
