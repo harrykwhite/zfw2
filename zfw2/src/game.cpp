@@ -6,6 +6,50 @@
 namespace zfw2
 {
 
+struct GameCleanupInfo
+{
+    bool glfwInitialized;
+    GLFWwindow *glfwWindow;
+    ALCdevice *alDevice;
+    ALCcontext *alContext;
+    const Assets *assets;
+    const InternalShaderProgs *internalShaderProgs;
+};
+
+static void clean_game(const GameCleanupInfo &cleanupInfo)
+{
+    if (cleanupInfo.internalShaderProgs)
+    {
+        clean_internal_shader_progs(*cleanupInfo.internalShaderProgs);
+    }
+
+    if (cleanupInfo.assets)
+    {
+        clean_assets(*cleanupInfo.assets);
+    }
+
+    if (cleanupInfo.alContext)
+    {
+        alcMakeContextCurrent(nullptr);
+        alcDestroyContext(cleanupInfo.alContext);
+    }
+    
+    if (cleanupInfo.alDevice)
+    {
+        alcCloseDevice(cleanupInfo.alDevice);
+    }
+    
+    if (cleanupInfo.glfwWindow)
+    {
+        glfwDestroyWindow(cleanupInfo.glfwWindow);
+    }
+
+    if (cleanupInfo.glfwInitialized)
+    {
+        glfwTerminate();
+    }
+}
+
 static inline double calc_valid_frame_dur(const double frameTime, const double frameTimeLast)
 {
     const double dur = frameTime - frameTimeLast;
@@ -28,8 +72,10 @@ static inline void glfw_scroll_callback(GLFWwindow *const window, const double x
 {
 }
 
-void run_game(const SceneFactory &initSceneFactory, GameCleanupInfo &cleanupInfo)
+void run_game(const SceneFactory &initSceneFactory)
 {
+    GameCleanupInfo cleanupInfo = {};
+
     //
     // Initialisation
     //
@@ -52,6 +98,7 @@ void run_game(const SceneFactory &initSceneFactory, GameCleanupInfo &cleanupInfo
 
     if (!glfwWindow)
     {
+        clean_game(cleanupInfo);
         return;
     }
 
@@ -69,24 +116,27 @@ void run_game(const SceneFactory &initSceneFactory, GameCleanupInfo &cleanupInfo
     // Initialise OpenGL function pointers.
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {
+        clean_game(cleanupInfo);
         return;
     }
 
     // Open a playback device for OpenAL.
-    ALCdevice *alDevice = alcOpenDevice(nullptr);
+    ALCdevice *const alDevice = alcOpenDevice(nullptr);
 
     if (!alDevice)
     {
+        clean_game(cleanupInfo);
         return;
     }
 
     cleanupInfo.alDevice = alDevice;
 
     // Create an OpenAL context.
-    ALCcontext *alContext = alcCreateContext(alDevice, nullptr);
+    ALCcontext *const alContext = alcCreateContext(alDevice, nullptr);
 
     if (!alContext)
     {
+        clean_game(cleanupInfo);
         return;
     }
 
@@ -95,15 +145,19 @@ void run_game(const SceneFactory &initSceneFactory, GameCleanupInfo &cleanupInfo
     alcMakeContextCurrent(alContext);
 
     // Load assets.
-    Assets assets;
+    bool assetsLoadErr;
+    const Assets assets = load_assets(assetsLoadErr);
 
-    if (!assets.load_all(zfw2_common::gk_assetsFileName))
+    if (assetsLoadErr)
     {
+        clean_game(cleanupInfo);
         return;
     }
 
-    InternalShaderProgs internalShaderProgs;
-    internalShaderProgs.load_all();
+    cleanupInfo.assets = &assets;
+
+    const InternalShaderProgs internalShaderProgs = load_internal_shader_progs();
+    cleanupInfo.internalShaderProgs = &internalShaderProgs;
 
     // Enable blending.
     glEnable(GL_BLEND);
@@ -174,30 +228,8 @@ void run_game(const SceneFactory &initSceneFactory, GameCleanupInfo &cleanupInfo
 
         glfwSwapBuffers(glfwWindow);
     }
-}
 
-void clean_game(const GameCleanupInfo &cleanupInfo)
-{
-    if (cleanupInfo.alContext)
-    {
-        alcMakeContextCurrent(nullptr);
-        alcDestroyContext(cleanupInfo.alContext);
-    }
-
-    if (cleanupInfo.alDevice)
-    {
-        alcCloseDevice(cleanupInfo.alDevice);
-    }
-
-    if (cleanupInfo.glfwWindow)
-    {
-        glfwDestroyWindow(cleanupInfo.glfwWindow);
-    }
-
-    if (cleanupInfo.glfwInitialized)
-    {
-        glfwTerminate();
-    }
+    clean_game(cleanupInfo);
 }
 
 }

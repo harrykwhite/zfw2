@@ -120,7 +120,7 @@ SpriteBatch &SpriteBatch::operator=(SpriteBatch &&other) noexcept
 
 void SpriteBatch::draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const
 {
-    const GLID progGLID = internalShaderProgs.get_sprite_quad_prog_gl_id();
+    const GLID progGLID = internalShaderProgs.spriteQuadProgGLID;
 
     glUseProgram(progGLID);
 
@@ -139,7 +139,7 @@ void SpriteBatch::draw(const InternalShaderProgs &internalShaderProgs, const Ass
     for (int i = 0; i < gk_texUnitLimit; ++i)
     {
         glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, m_texUnitRefCnts[i] > 0 ? assets.get_tex_gl_id(m_texUnitTexIndexes[i]) : 0);
+        glBindTexture(GL_TEXTURE_2D, m_texUnitRefCnts[i] > 0 ? assets.texGLIDs[m_texUnitTexIndexes[i]] : 0);
     }
 
     glUniform1iv(glGetUniformLocation(progGLID, "u_textures"), gk_texUnitLimit, texUnits);
@@ -195,7 +195,7 @@ void SpriteBatch::release_slot(const int slotIndex)
 void SpriteBatch::write_to_slot(const int slotIndex, const Assets &assets, const zfw2_common::Vec2D pos, const zfw2_common::Rect &srcRect, const zfw2_common::Vec2D origin, const float rot, const zfw2_common::Vec2D scale, const float alpha) const
 {
     const int texUnit = m_slotTexUnits[slotIndex];
-    const zfw2_common::Vec2DInt texSize = assets.get_tex_size(m_texUnitTexIndexes[texUnit]);
+    const zfw2_common::Vec2DInt texSize = assets.texSizes[m_texUnitTexIndexes[texUnit]];
 
     const float verts[gk_spriteQuadShaderProgVertCnt * 4] = {
         (0.0f - origin.x) * scale.x,
@@ -389,7 +389,7 @@ void CharBatch::write(const std::string &text, const FontAlignHor alignHor, cons
 
     m_activeSlotCnt = text.length();
 
-    const zfw2_common::FontData &fontData = assets.get_font_data(m_fontIndex);
+    const zfw2_common::FontData &fontData = assets.fontDatas[m_fontIndex];
 
     // Determine the positions of text characters based on font information, alongside the overall dimensions of the text to be used when applying alignment.
     std::vector<zfw2_common::Vec2D> charDrawPositions(m_slotCnt);
@@ -537,7 +537,7 @@ void CharBatch::write(const std::string &text, const FontAlignHor alignHor, cons
 
 void CharBatch::draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const
 {
-    const GLID progGLID = internalShaderProgs.get_char_quad_prog_gl_id();
+    const GLID progGLID = internalShaderProgs.charQuadProgGLID;
     glUseProgram(progGLID);
 
     const auto projMat = zfw2_common::Matrix4x4::create_ortho(0.0f, windowSize.x, windowSize.y, 0.0f, -1.0f, 1.0f);
@@ -548,7 +548,7 @@ void CharBatch::draw(const InternalShaderProgs &internalShaderProgs, const Asset
     glUniform4fv(glGetUniformLocation(progGLID, "u_blend"), 1, reinterpret_cast<const float *>(&m_blend));
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, assets.get_font_tex_gl_id(m_fontIndex));
+    glBindTexture(GL_TEXTURE_2D, assets.fontTexGLIDs[m_fontIndex]);
 
     glBindVertexArray(m_vertArrayGLID);
     glDrawElements(GL_TRIANGLES, 6 * m_activeSlotCnt, GL_UNSIGNED_SHORT, nullptr);

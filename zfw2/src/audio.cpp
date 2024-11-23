@@ -42,7 +42,7 @@ void SoundManager::play(const int soundIndex, const Assets &assets, const float 
         {
             // Set up the source.
             alGenSources(1, &m_srcALIDs[i]);
-            alSourcei(m_srcALIDs[i], AL_BUFFER, assets.get_sound_buf_al_id(soundIndex));
+            alSourcei(m_srcALIDs[i], AL_BUFFER, assets.soundBufALIDs[soundIndex]);
 
             // Rewind it in case it is already playing.
             alSourceRewind(m_srcALIDs[i]);

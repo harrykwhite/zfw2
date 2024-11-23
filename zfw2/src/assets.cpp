@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <array>
+#include <iostream>
 
 namespace zfw2
 {
@@ -130,79 +131,66 @@ static GLID create_shader_prog_from_srcs(const std::string &vertShaderSrc, const
     return progGLID;
 }
 
-Assets::~Assets()
+Assets load_assets(bool &err)
 {
-    if (m_loaded)
-    {
-        alDeleteBuffers(m_soundCnt, m_soundBufALIDs.get());
-
-        glDeleteTextures(m_fontCnt, m_fontTexGLIDs.get());
-
-        for (int i = 0; i < m_shaderProgCnt; ++i)
-        {
-            glDeleteProgram(m_shaderProgGLIDs[i]);
-        }
-
-        glDeleteTextures(m_texCnt, m_texGLIDs.get());
-    }
-}
-
-bool Assets::load_all(const std::string &filename)
-{
-    assert(!m_loaded);
+    err = false;
 
     // Try opening the assets file.
-    std::ifstream ifs(filename, std::ios::binary);
+    std::ifstream ifs(zfw2_common::gk_assetsFileName, std::ios::binary);
 
     if (!ifs.is_open())
     {
-        return false;
+        std::cerr << "ERROR: Failed to open \"" << zfw2_common::gk_assetsFileName << "\"!" << std::endl;
+        err = true;
+        return {};
     }
 
     // Read asset counts from the header.
-    m_texCnt = read_from_ifs<int>(ifs);
-    m_shaderProgCnt = read_from_ifs<int>(ifs);
-    m_fontCnt = read_from_ifs<int>(ifs);
-    m_soundCnt = read_from_ifs<int>(ifs);
+    const int texCnt = read_from_ifs<int>(ifs);
+    const int shaderProgCnt = read_from_ifs<int>(ifs);
+    const int fontCnt = read_from_ifs<int>(ifs);
+    const int soundCnt = read_from_ifs<int>(ifs);
 
     //
     // Textures
     //
-    if (m_texCnt > 0)
+    std::unique_ptr<GLID[]> texGLIDs = nullptr;
+    std::unique_ptr<zfw2_common::Vec2DInt[]> texSizes = nullptr;
+
+    if (texCnt > 0)
     {
         // Generate textures and store their IDs.
-        m_texGLIDs = std::make_unique<GLID[]>(m_texCnt);
-        glGenTextures(m_texCnt, m_texGLIDs.get());
+        texGLIDs = std::make_unique<GLID[]>(texCnt);
+        glGenTextures(texCnt, texGLIDs.get());
 
         // Read the sizes and pixel data of textures and finish setting them up.
-        m_texSizes = std::make_unique<zfw2_common::Vec2DInt[]>(m_texCnt);
+        texSizes = std::make_unique<zfw2_common::Vec2DInt[]>(texCnt);
 
+        const int px_data_buf_size = zfw2_common::gk_texChannelCnt * zfw2_common::gk_texSizeLimit.x * zfw2_common::gk_texSizeLimit.y;
+        const auto px_data_buf = std::make_unique<unsigned char[]>(px_data_buf_size); // This is working space for temporarily storing the pixel data of each texture.
+
+        for (int i = 0; i < texCnt; ++i)
         {
-            const int px_data_buf_size = zfw2_common::gk_texChannelCnt * zfw2_common::gk_texSizeLimit.x * zfw2_common::gk_texSizeLimit.y;
-            const auto px_data_buf = std::make_unique<unsigned char[]>(px_data_buf_size); // This is working space for temporarily storing the pixel data of each texture.
+            ifs.read(reinterpret_cast<char *>(&texSizes[i]), sizeof(zfw2_common::Vec2DInt));
+            ifs.read(reinterpret_cast<char *>(px_data_buf.get()), zfw2_common::gk_texChannelCnt * texSizes[i].x * texSizes[i].y);
 
-            for (int i = 0; i < m_texCnt; ++i)
-            {
-                ifs.read(reinterpret_cast<char *>(&m_texSizes[i]), sizeof(zfw2_common::Vec2DInt));
-
-                ifs.read(reinterpret_cast<char *>(px_data_buf.get()), zfw2_common::gk_texChannelCnt * m_texSizes[i].x * m_texSizes[i].y);
-
-                glBindTexture(GL_TEXTURE_2D, m_texGLIDs[i]);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_texSizes[i].x, m_texSizes[i].y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
-            }
+            glBindTexture(GL_TEXTURE_2D, texGLIDs[i]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texSizes[i].x, texSizes[i].y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
         }
     }
 
     //
     // Shader Programs
     //
-    if (m_shaderProgCnt > 0)
-    {
-        m_shaderProgGLIDs = std::make_unique<GLID[]>(m_shaderProgCnt);
+    std::unique_ptr<GLID[]> shaderProgGLIDs = nullptr;
 
-        for (int i = 0; i < m_shaderProgCnt; ++i)
+    if (shaderProgCnt > 0)
+    {
+        shaderProgGLIDs = std::make_unique<GLID[]>(shaderProgCnt);
+
+        for (int i = 0; i < shaderProgCnt; ++i)
         {
             const auto vertShaderSrcSize = read_from_ifs<int>(ifs);
             std::string vertShaderSrc;
@@ -214,45 +202,49 @@ bool Assets::load_all(const std::string &filename)
             fragShaderSrc.reserve(fragShaderSrcSize);
             ifs.read(fragShaderSrc.data(), fragShaderSrcSize);
 
-            m_shaderProgGLIDs[i] = create_shader_prog_from_srcs(vertShaderSrc, fragShaderSrc);
+            shaderProgGLIDs[i] = create_shader_prog_from_srcs(vertShaderSrc, fragShaderSrc);
         }
     }
 
     //
     // Fonts
     //
-    if (m_fontCnt > 0)
-    {
-        m_fontTexGLIDs = std::make_unique<GLID[]>(m_fontCnt);
-        glGenTextures(m_fontCnt, m_fontTexGLIDs.get());
+    std::unique_ptr<GLID[]> fontTexGLIDs = nullptr;
+    std::unique_ptr<zfw2_common::FontData[]> fontDatas = nullptr;
 
-        m_fontDatas = std::make_unique<zfw2_common::FontData[]>(m_fontCnt);
+    if (fontCnt > 0)
+    {
+        fontTexGLIDs = std::make_unique<GLID[]>(fontCnt);
+        glGenTextures(fontCnt, fontTexGLIDs.get());
+
+        fontDatas = std::make_unique<zfw2_common::FontData[]>(fontCnt);
 
         const int px_data_buf_size = zfw2_common::gk_texChannelCnt * zfw2_common::gk_texSizeLimit.x * zfw2_common::gk_texSizeLimit.y;
         const auto px_data_buf = std::make_unique<unsigned char[]>(px_data_buf_size); // This is working space for temporarily storing the pixel data of each font texture.
 
-        for (int i = 0; i < m_fontCnt; ++i)
+        for (int i = 0; i < fontCnt; ++i)
         {
-            ifs.read(reinterpret_cast<char *>(&m_fontDatas[i]), sizeof(zfw2_common::FontData));
+            ifs.read(reinterpret_cast<char *>(&fontDatas[i]), sizeof(zfw2_common::FontData));
+            ifs.read(reinterpret_cast<char *>(px_data_buf.get()), zfw2_common::gk_texChannelCnt * fontDatas[i].texSize.x * fontDatas[i].texSize.y);
 
-            ifs.read(reinterpret_cast<char *>(px_data_buf.get()), zfw2_common::gk_texChannelCnt * m_fontDatas[i].texSize.x * m_fontDatas[i].texSize.y);
-
-            glBindTexture(GL_TEXTURE_2D, m_fontTexGLIDs[i]);
+            glBindTexture(GL_TEXTURE_2D, fontTexGLIDs[i]);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_fontDatas[i].texSize.x, m_fontDatas[i].texSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fontDatas[i].texSize.x, fontDatas[i].texSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
         }
     }
 
     //
     // Sounds
     //
-    if (m_soundCnt > 0)
-    {
-        m_soundBufALIDs = std::make_unique<ALID[]>(m_soundCnt);
-        alGenBuffers(m_soundCnt, m_soundBufALIDs.get());
+    std::unique_ptr<ALID[]> soundBufALIDs = nullptr;
 
-        for (int i = 0; i < m_soundCnt; ++i)
+    if (soundCnt > 0)
+    {
+        soundBufALIDs = std::make_unique<ALID[]>(soundCnt);
+        alGenBuffers(soundCnt, soundBufALIDs.get());
+
+        for (int i = 0; i < soundCnt; ++i)
         {
             const auto channelCnt = read_from_ifs<int>(ifs);
             const auto sampleCntPerChannel = read_from_ifs<int>(ifs);
@@ -265,25 +257,54 @@ bool Assets::load_all(const std::string &filename)
             ifs.read(reinterpret_cast<char *>(sampleData.get()), sampleDataSize);
 
             const ALenum format = channelCnt == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
-            alBufferData(m_soundBufALIDs[i], format, sampleData.get(), sampleDataSize, sampleRate);
+            alBufferData(soundBufALIDs[i], format, sampleData.get(), sampleDataSize, sampleRate);
         }
     }
 
-    m_loaded = true;
+    return {
+        .texCnt = texCnt,
+        .shaderProgCnt = shaderProgCnt,
+        .fontCnt = fontCnt,
+        .soundCnt = soundCnt,
 
-    return true;
+        .texGLIDs = std::move(texGLIDs),
+        .texSizes = std::move(texSizes),
+
+        .shaderProgGLIDs = std::move(shaderProgGLIDs),
+
+        .fontTexGLIDs = std::move(fontTexGLIDs),
+        .fontDatas = std::move(fontDatas),
+
+        .soundBufALIDs = std::move(soundBufALIDs)
+    };
 }
 
-InternalShaderProgs::~InternalShaderProgs()
+void clean_assets(const Assets &assets)
 {
-    glDeleteProgram(m_charQuadProgGLID);
-    glDeleteProgram(m_spriteQuadProgGLID);
+    alDeleteBuffers(assets.soundCnt, assets.soundBufALIDs.get());
+
+    glDeleteTextures(assets.fontCnt, assets.fontTexGLIDs.get());
+
+    for (int i = 0; i < assets.shaderProgCnt; ++i)
+    {
+        glDeleteProgram(assets.shaderProgGLIDs[i]);
+    }
+
+    glDeleteTextures(assets.texCnt, assets.texGLIDs.get());
 }
 
-void InternalShaderProgs::load_all()
+InternalShaderProgs load_internal_shader_progs()
 {
-    m_spriteQuadProgGLID = create_shader_prog_from_srcs(gk_spriteQuadVertShaderSrc, gk_spriteQuadFragShaderSrc);
-    m_charQuadProgGLID = create_shader_prog_from_srcs(gk_charQuadVertShaderSrc, gk_charQuadFragShaderSrc);
+    return {
+        .spriteQuadProgGLID = create_shader_prog_from_srcs(gk_spriteQuadVertShaderSrc, gk_spriteQuadFragShaderSrc),
+        .charQuadProgGLID = create_shader_prog_from_srcs(gk_charQuadVertShaderSrc, gk_charQuadFragShaderSrc)
+    };
+}
+
+void clean_internal_shader_progs(const InternalShaderProgs &internalShaderProgs)
+{
+    glDeleteProgram(internalShaderProgs.charQuadProgGLID);
+    glDeleteProgram(internalShaderProgs.spriteQuadProgGLID);
 }
 
 }

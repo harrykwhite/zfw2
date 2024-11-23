@@ -13,6 +13,7 @@ namespace zfw2
 constexpr int gk_spriteQuadShaderProgVertCnt = 11;
 constexpr int gk_charQuadShaderProgVertCnt = 4;
 
+#if 0
 class Assets
 {
 public:
@@ -77,30 +78,36 @@ private:
 
     std::unique_ptr<ALID[]> m_soundBufALIDs;
 };
+#endif
 
-class InternalShaderProgs
+struct Assets
 {
-public:
-    InternalShaderProgs() = default;
-    ~InternalShaderProgs();
-    InternalShaderProgs(const InternalShaderProgs &other) = delete;
-    InternalShaderProgs &operator=(const InternalShaderProgs &other) = delete;
+    const int texCnt;
+    const int shaderProgCnt;
+    const int fontCnt;
+    const int soundCnt;
 
-    void load_all();
+    const std::unique_ptr<const GLID[]> texGLIDs;
+    const std::unique_ptr<const zfw2_common::Vec2DInt[]> texSizes;
 
-    GLID get_sprite_quad_prog_gl_id() const
-    {
-        return m_spriteQuadProgGLID;
-    }
+    const std::unique_ptr<const GLID[]> shaderProgGLIDs;
 
-    GLID get_char_quad_prog_gl_id() const
-    {
-        return m_charQuadProgGLID;
-    }
+    const std::unique_ptr<const GLID[]> fontTexGLIDs;
+    const std::unique_ptr<const zfw2_common::FontData[]> fontDatas;
 
-private:
-    GLID m_spriteQuadProgGLID = 0;
-    GLID m_charQuadProgGLID = 0;
+    const std::unique_ptr<const ALID[]> soundBufALIDs;
 };
+
+struct InternalShaderProgs
+{
+    const GLID spriteQuadProgGLID;
+    const GLID charQuadProgGLID;
+};
+
+Assets load_assets(bool &err);
+void clean_assets(const Assets &assets);
+
+InternalShaderProgs load_internal_shader_progs();
+void clean_internal_shader_progs(const InternalShaderProgs &internalShaderProgs);
 
 }
