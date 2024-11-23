@@ -161,6 +161,7 @@ bool Assets::load_all(const std::string &filename)
     m_texCnt = read_from_ifs<int>(ifs);
     m_shaderProgCnt = read_from_ifs<int>(ifs);
     m_fontCnt = read_from_ifs<int>(ifs);
+    m_soundCnt = read_from_ifs<int>(ifs);
 
     //
     // Textures

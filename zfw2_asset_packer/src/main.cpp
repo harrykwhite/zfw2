@@ -59,6 +59,23 @@ static std::vector<FontPackingInfo> get_font_packing_infos_from_json(const nlohm
     return packingInfos;
 }
 
+static std::vector<SoundPackingInfo> get_sound_packing_infos_from_json(const nlohmann::json &json)
+{
+    std::vector<SoundPackingInfo> packingInfos;
+
+    if (json.contains("sound_rfps"))
+    {
+        for (const auto &soundRFP : json["sound_rfps"])
+        {
+            SoundPackingInfo packingInfo;
+            packingInfo.relFilePath = soundRFP;
+            packingInfos.emplace_back(packingInfo);
+        }
+    }
+
+    return packingInfos;
+}
+
 int main(const int argCnt, const char *const *const args)
 {
     if (argCnt > 3)
@@ -128,6 +145,7 @@ int main(const int argCnt, const char *const *const args)
     const std::vector<TexPackingInfo> texPackingInfos = get_tex_packing_infos_from_json(packingInfoJSON);
     const std::vector<ShaderProgPackingInfo> shaderProgPackingInfos = get_shader_prog_packing_infos_from_json(packingInfoJSON);
     const std::vector<FontPackingInfo> fontPackingInfos = get_font_packing_infos_from_json(packingInfoJSON);
+    const std::vector<SoundPackingInfo> soundPackingInfos = get_sound_packing_infos_from_json(packingInfoJSON);
 
     // Close the packing information JSON file. (TODO: Do this via scoping.)
     packingInfoFileIS.close();
@@ -152,10 +170,14 @@ int main(const int argCnt, const char *const *const args)
     const int fontCnt = fontPackingInfos.size();
     assetsFileOS.write(reinterpret_cast<const char *>(&fontCnt), sizeof(fontCnt));
 
+    const int soundCnt = soundPackingInfos.size();
+    assetsFileOS.write(reinterpret_cast<const char *>(&soundCnt), sizeof(soundCnt));
+
     // Pack the assets.
     if (!pack_textures(texPackingInfos, assetsFileOS, assetsDir)
         || !pack_shader_progs(shaderProgPackingInfos, assetsFileOS, assetsDir)
-        || !pack_fonts(fontPackingInfos, assetsFileOS, assetsDir))
+        || !pack_fonts(fontPackingInfos, assetsFileOS, assetsDir)
+        || !pack_sounds(soundPackingInfos, assetsFileOS, assetsDir))
     {
         std::remove(zfw2_common::gk_assetsFileName.c_str());
         return EXIT_FAILURE;

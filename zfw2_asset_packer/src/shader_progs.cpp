@@ -36,7 +36,7 @@ bool pack_shader_progs(const std::vector<ShaderProgPackingInfo> &packingInfos, s
             // Write the shader content to assets file.
             assetsFileOS.write(shaderSrc.get(), shaderSrcSize);
 
-            std::cout << "Successfully packed shader with file path \"" << shaderFilePath << "\"." << std::endl;
+            std::cout << "Successfully packed shader \"" << shaderFilePath << "\"." << std::endl;
         }
     }
 

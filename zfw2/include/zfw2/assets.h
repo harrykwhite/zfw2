@@ -56,6 +56,7 @@ private:
     int m_texCnt = 0;
     int m_shaderProgCnt = 0;
     int m_fontCnt = 0;
+    int m_soundCnt = 0;
 
     std::unique_ptr<GLID[]> m_texGLIDs;
     std::unique_ptr<zfw2_common::Vec2DInt[]> m_texSizes;

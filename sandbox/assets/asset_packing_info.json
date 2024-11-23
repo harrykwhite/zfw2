@@ -22,5 +22,8 @@
 			"rfp": "fonts/eb_garamond.ttf",
 			"pt_size": 36
 		}
-	]
+	],
+	"sound_rfps": [
+        "sounds/bloop.wav"
+    ]
 }

@@ -21,6 +21,12 @@ struct FontPackingInfo
     int ptSize;
 };
 
+struct SoundPackingInfo
+{
+    std::string relFilePath;
+};
+
 bool pack_textures(const std::vector<TexPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir);
 bool pack_shader_progs(const std::vector<ShaderProgPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir);
 bool pack_fonts(const std::vector<FontPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir);
+bool pack_sounds(const std::vector<SoundPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir);

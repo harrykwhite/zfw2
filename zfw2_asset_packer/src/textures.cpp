@@ -21,7 +21,7 @@ bool pack_textures(const std::vector<TexPackingInfo> &packingInfos, std::ofstrea
 
         if (texSize.x > zfw2_common::gk_texSizeLimit.x || texSize.y > zfw2_common::gk_texSizeLimit.y)
         {
-            std::cerr << "ERROR: The texture with file path \"" << packingInfo.relFilePath << "\" exceeds the size limit of " << zfw2_common::gk_texSizeLimit.x << "x" << zfw2_common::gk_texSizeLimit.y << "!" << std::endl;
+            std::cerr << "ERROR: The texture \"" << texFilePath << "\" exceeds the size limit of " << zfw2_common::gk_texSizeLimit.x << " by " << zfw2_common::gk_texSizeLimit.y << "!" << std::endl;
             stbi_image_free(pxData);
             return false;
         }
@@ -31,7 +31,7 @@ bool pack_textures(const std::vector<TexPackingInfo> &packingInfos, std::ofstrea
 
         stbi_image_free(pxData);
 
-        std::cout << "Successfully packed texture with file path \"" << packingInfo.relFilePath << "\"." << std::endl;
+        std::cout << "Successfully packed texture \"" << texFilePath << "\"." << std::endl;
     }
 
     return true;

@@ -1,6 +1,7 @@
 project(zfw2)
 
 find_package(glfw3 CONFIG REQUIRED)
+find_package(OpenAL CONFIG REQUIRED)
 
 get_filename_component(PARENT_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR} PATH)
 
@@ -33,4 +34,4 @@ target_include_directories(zfw2 PRIVATE
 	${PARENT_SRC_DIR}/vendor/glad/include
 )
 
-target_link_libraries(zfw2 PRIVATE zfw2_common glfw)
+target_link_libraries(zfw2 PRIVATE zfw2_common glfw OpenAL::OpenAL)
