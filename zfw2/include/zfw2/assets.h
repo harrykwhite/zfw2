@@ -10,6 +10,9 @@
 namespace zfw2
 {
 
+constexpr int gk_spriteQuadShaderProgVertCnt = 11;
+constexpr int gk_charQuadShaderProgVertCnt = 4;
+
 class Assets
 {
 public:
@@ -48,6 +51,12 @@ public:
     {
         assert(index >= 0 && index < m_fontCnt);
         return m_fontDatas[index];
+    }
+
+    inline ALID get_sound_buf_al_id(const int index) const
+    {
+        assert(index >= 0 && index < m_soundCnt);
+        return m_soundBufALIDs[index];
     }
 
 private:
@@ -93,8 +102,5 @@ private:
     GLID m_spriteQuadProgGLID = 0;
     GLID m_charQuadProgGLID = 0;
 };
-
-constexpr int gk_spriteQuadShaderProgVertCnt = 11;
-constexpr int gk_charQuadShaderProgVertCnt = 4;
 
 }

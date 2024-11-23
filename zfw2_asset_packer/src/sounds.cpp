@@ -9,7 +9,7 @@ bool pack_sounds(const std::vector<SoundPackingInfo> &packingInfos, std::ofstrea
         const std::string soundFilePath = assetsDir + "/" + packingInfo.relFilePath;
 
         // Load the sound file.
-        AudioFile<float> audioFile;
+        AudioFile<short> audioFile;
         audioFile.shouldLogErrorsToConsole(false);
 
         if (!audioFile.load(soundFilePath))
@@ -32,7 +32,7 @@ bool pack_sounds(const std::vector<SoundPackingInfo> &packingInfos, std::ofstrea
         if (channelCnt == 1)
         {
             for (int i = 0; i < sampleCntPerChannel; ++i) {
-                const float sample = audioFile.samples[0][i];
+                const short sample = audioFile.samples[0][i];
                 assetsFileOS.write(reinterpret_cast<const char *>(&sample), sizeof(sample));
 		    }
         }
@@ -41,10 +41,10 @@ bool pack_sounds(const std::vector<SoundPackingInfo> &packingInfos, std::ofstrea
             // The channel count is 2.
             for (int i = 0; i < sampleCntPerChannel * 2; i += 2)
             {
-                const float sample1 = audioFile.samples[0][i];
+                const short sample1 = audioFile.samples[0][i];
                 assetsFileOS.write(reinterpret_cast<const char *>(&sample1), sizeof(sample1));
 
-                const float sample2 = audioFile.samples[1][i];
+                const short sample2 = audioFile.samples[1][i];
                 assetsFileOS.write(reinterpret_cast<const char *>(&sample2), sizeof(sample2));
             }
         }

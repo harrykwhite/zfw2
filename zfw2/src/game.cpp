@@ -6,20 +6,29 @@
 namespace zfw2
 {
 
-Game::~Game()
+static inline double calc_valid_frame_dur(const double frameTime, const double frameTimeLast)
 {
-    if (m_glfwWindow)
-    {
-        glfwDestroyWindow(m_glfwWindow);
-    }
-
-    if (m_glfwInitialized)
-    {
-        glfwTerminate();
-    }
+    const double dur = frameTime - frameTimeLast;
+    return dur >= 0.0 && dur <= gk_targTickDur * 8.0 ? dur : 0.0;
 }
 
-void Game::run(const SceneFactory &initSceneFactory)
+static inline zfw2_common::Vec2DInt get_glfw_window_size(GLFWwindow *const window)
+{
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    return {width, height};
+}
+
+static inline void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+static inline void glfw_scroll_callback(GLFWwindow *const window, const double xOffs, const double yOffs)
+{
+}
+
+void run_game(const SceneFactory &initSceneFactory, GameCleanupInfo &cleanupInfo)
 {
     //
     // Initialisation
@@ -31,7 +40,7 @@ void Game::run(const SceneFactory &initSceneFactory)
         return;
     }
 
-    m_glfwInitialized = true;
+    cleanupInfo.glfwInitialized = true;
 
     // Create the GLFW window.
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, gk_glVersionMajor);
@@ -39,21 +48,23 @@ void Game::run(const SceneFactory &initSceneFactory)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, false); // Show the window later once other systems have been set up.
 
-    m_glfwWindow = glfwCreateWindow(1280, 720, m_windowTitle.c_str(), nullptr, nullptr);
+    GLFWwindow *const glfwWindow = glfwCreateWindow(1280, 720, "Untitled", nullptr, nullptr);
 
-    if (!m_glfwWindow)
+    if (!glfwWindow)
     {
         return;
     }
 
-    glfwMakeContextCurrent(m_glfwWindow);
+    cleanupInfo.glfwWindow = glfwWindow;
+
+    glfwMakeContextCurrent(glfwWindow);
 
     // Set GLFW window callbacks.
-    glfwSetWindowSizeCallback(m_glfwWindow, glfw_window_size_callback);
-    glfwSetScrollCallback(m_glfwWindow, glfw_scroll_callback);
+    glfwSetWindowSizeCallback(glfwWindow, glfw_window_size_callback);
+    glfwSetScrollCallback(glfwWindow, glfw_scroll_callback);
 
     // Hide the cursor.
-    glfwSetInputMode(m_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     // Initialise OpenGL function pointers.
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
@@ -61,27 +72,57 @@ void Game::run(const SceneFactory &initSceneFactory)
         return;
     }
 
-    // Load assets.
-    if (!m_assets.load_all(zfw2_common::gk_assetsFileName))
+    // Open a playback device for OpenAL.
+    ALCdevice *alDevice = alcOpenDevice(nullptr);
+
+    if (!alDevice)
     {
         return;
     }
 
-    m_internalShaderProgs.load_all();
+    cleanupInfo.alDevice = alDevice;
+
+    // Create an OpenAL context.
+    ALCcontext *alContext = alcCreateContext(alDevice, nullptr);
+
+    if (!alContext)
+    {
+        return;
+    }
+
+    cleanupInfo.alContext = alContext;
+
+    alcMakeContextCurrent(alContext);
+
+    // Load assets.
+    Assets assets;
+
+    if (!assets.load_all(zfw2_common::gk_assetsFileName))
+    {
+        return;
+    }
+
+    InternalShaderProgs internalShaderProgs;
+    internalShaderProgs.load_all();
 
     // Enable blending.
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Set up input.
+    InputManager inputManager;
+
     int glfwCallbackMouseScroll = 0; // This is an axis representing the scroll wheel movement. It is updated by the GLFW scroll callback and gets reset after a new input state is generated.
-    glfwSetWindowUserPointer(m_glfwWindow, &glfwCallbackMouseScroll);
+    glfwSetWindowUserPointer(glfwWindow, &glfwCallbackMouseScroll);
+
+    // Create the sound manager.
+    SoundManager soundManager;
 
     // Create the initial scene.
-    m_scene = initSceneFactory(m_assets, get_glfw_window_size());
+    std::unique_ptr<Scene> m_scene = initSceneFactory(assets, get_glfw_window_size(glfwWindow));
 
     // Show the window now that things have been set up.
-    glfwShowWindow(m_glfwWindow);
+    glfwShowWindow(glfwWindow);
 
     //
     // Main Loop
@@ -89,7 +130,7 @@ void Game::run(const SceneFactory &initSceneFactory)
     double frameTime = glfwGetTime();
     double frameDurAccum = 0.0;
 
-    while (!glfwWindowShouldClose(m_glfwWindow))
+    while (!glfwWindowShouldClose(glfwWindow))
     {
         glfwPollEvents();
 
@@ -103,8 +144,10 @@ void Game::run(const SceneFactory &initSceneFactory)
 
         if (tickCnt > 0)
         {
-            m_inputManager.refresh(m_glfwWindow, glfwCallbackMouseScroll);
+            inputManager.refresh(glfwWindow, glfwCallbackMouseScroll);
             glfwCallbackMouseScroll = 0;
+
+            soundManager.refresh_srcs();
 
             // Execute ticks.
             int i = 0;
@@ -113,11 +156,11 @@ void Game::run(const SceneFactory &initSceneFactory)
             {
                 SceneFactory sceneChangeFactory; // This will be assigned if a scene change is requested.
 
-                m_scene->on_tick(m_inputManager, m_assets, sceneChangeFactory);
+                m_scene->on_tick(inputManager, soundManager, assets, sceneChangeFactory);
 
                 if (sceneChangeFactory)
                 {
-                    m_scene = sceneChangeFactory(m_assets, get_glfw_window_size());
+                    m_scene = sceneChangeFactory(assets, get_glfw_window_size(glfwWindow));
                 }
 
                 frameDurAccum -= gk_targTickDur;
@@ -127,9 +170,33 @@ void Game::run(const SceneFactory &initSceneFactory)
             while (i < tickCnt);
         }
 
-        m_scene->draw(m_internalShaderProgs, m_assets, get_glfw_window_size());
+        m_scene->draw(internalShaderProgs, assets, get_glfw_window_size(glfwWindow));
 
-        glfwSwapBuffers(m_glfwWindow);
+        glfwSwapBuffers(glfwWindow);
+    }
+}
+
+void clean_game(const GameCleanupInfo &cleanupInfo)
+{
+    if (cleanupInfo.alContext)
+    {
+        alcMakeContextCurrent(nullptr);
+        alcDestroyContext(cleanupInfo.alContext);
+    }
+
+    if (cleanupInfo.alDevice)
+    {
+        alcCloseDevice(cleanupInfo.alDevice);
+    }
+
+    if (cleanupInfo.glfwWindow)
+    {
+        glfwDestroyWindow(cleanupInfo.glfwWindow);
+    }
+
+    if (cleanupInfo.glfwInitialized)
+    {
+        glfwTerminate();
     }
 }
 

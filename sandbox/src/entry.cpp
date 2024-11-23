@@ -3,6 +3,7 @@
 
 int main()
 {
-    zfw2::Game game("Sandbox");
-    game.run(zfw2::create_scene_factory<MainMenuScene>());
+    zfw2::GameCleanupInfo gameCleanupInfo;
+    zfw2::run_game(zfw2::create_scene_factory<MainMenuScene>(), gameCleanupInfo);
+    zfw2::clean_game(gameCleanupInfo);
 }

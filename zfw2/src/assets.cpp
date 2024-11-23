@@ -259,11 +259,11 @@ bool Assets::load_all(const std::string &filename)
             const auto sampleRate = read_from_ifs<unsigned int>(ifs);
 
             const int sampleCnt = sampleCntPerChannel * channelCnt;
-            const auto sampleData = std::make_unique<float[]>(sampleCnt);
-            const int sampleDataSize = sampleCnt * sizeof(float);
+            const auto sampleData = std::make_unique<short[]>(sampleCnt);
+            const int sampleDataSize = sampleCnt * sizeof(short);
 
             ifs.read(reinterpret_cast<char *>(sampleData.get()), sampleDataSize);
-            
+
             const ALenum format = channelCnt == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
             alBufferData(m_soundBufALIDs[i], format, sampleData.get(), sampleDataSize, sampleRate);
         }

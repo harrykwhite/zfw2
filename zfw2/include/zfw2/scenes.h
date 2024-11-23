@@ -5,6 +5,7 @@
 #include "graphics.h"
 #include "input.h"
 #include "assets.h"
+#include "audio.h"
 
 namespace zfw2
 {
@@ -20,7 +21,7 @@ public:
     {
     }
 
-    virtual void on_tick(const InputManager &inputManager, const Assets &assets, zfw2::SceneFactory &sceneChangeFactory) = 0;
+    virtual void on_tick(const InputManager &inputManager, zfw2::SoundManager &soundManager, const Assets &assets, zfw2::SceneFactory &sceneChangeFactory) = 0;
 
     inline void draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const
     {
