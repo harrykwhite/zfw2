@@ -65,6 +65,8 @@ private:
 
     std::unique_ptr<GLID[]> m_fontTexGLIDs;
     std::unique_ptr<zfw2_common::FontData[]> m_fontDatas;
+
+    std::unique_ptr<ALID[]> m_soundBufALIDs;
 };
 
 class InternalShaderProgs

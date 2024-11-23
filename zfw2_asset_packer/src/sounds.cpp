@@ -25,6 +25,9 @@ bool pack_sounds(const std::vector<SoundPackingInfo> &packingInfos, std::ofstrea
         const int sampleCntPerChannel = audioFile.getNumSamplesPerChannel();
         assetsFileOS.write(reinterpret_cast<const char *>(&sampleCntPerChannel), sizeof(sampleCntPerChannel));
 
+        const unsigned int sampleRate = audioFile.getSampleRate();
+        assetsFileOS.write(reinterpret_cast<const char *>(&sampleRate), sizeof(sampleRate));
+
         // Write the sample data.
         if (channelCnt == 1)
         {

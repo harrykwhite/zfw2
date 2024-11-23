@@ -134,6 +134,8 @@ Assets::~Assets()
 {
     if (m_loaded)
     {
+        alDeleteBuffers(m_soundCnt, m_soundBufALIDs.get());
+
         glDeleteTextures(m_fontCnt, m_fontTexGLIDs.get());
 
         for (int i = 0; i < m_shaderProgCnt; ++i)
@@ -239,6 +241,31 @@ bool Assets::load_all(const std::string &filename)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_fontDatas[i].texSize.x, m_fontDatas[i].texSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
+        }
+    }
+
+    //
+    // Sounds
+    //
+    if (m_soundCnt > 0)
+    {
+        m_soundBufALIDs = std::make_unique<ALID[]>(m_soundCnt);
+        alGenBuffers(m_soundCnt, m_soundBufALIDs.get());
+
+        for (int i = 0; i < m_soundCnt; ++i)
+        {
+            const auto channelCnt = read_from_ifs<int>(ifs);
+            const auto sampleCntPerChannel = read_from_ifs<int>(ifs);
+            const auto sampleRate = read_from_ifs<unsigned int>(ifs);
+
+            const int sampleCnt = sampleCntPerChannel * channelCnt;
+            const auto sampleData = std::make_unique<float[]>(sampleCnt);
+            const int sampleDataSize = sampleCnt * sizeof(float);
+
+            ifs.read(reinterpret_cast<char *>(sampleData.get()), sampleDataSize);
+            
+            const ALenum format = channelCnt == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
+            alBufferData(m_soundBufALIDs[i], format, sampleData.get(), sampleDataSize, sampleRate);
         }
     }
 

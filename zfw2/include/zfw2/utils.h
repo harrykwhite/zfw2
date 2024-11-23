@@ -5,16 +5,13 @@
 #include <cassert>
 #include <glad/glad.h>
 #include <zfw2_common/misc.h>
+#include <AL/al.h>
 
 namespace zfw2
 {
 
 using GLID = GLuint;
-
-constexpr inline int get_bit_to_byte_cnt(const int bitCnt)
-{
-    return (bitCnt + 7) & ~7;
-}
+using ALID = ALuint;
 
 class DynamicBitset
 {
@@ -66,8 +63,13 @@ private:
     int m_bitCnt = 0;
 };
 
+constexpr inline int get_bit_to_byte_cnt(const int bitCnt)
+{
+    return (bitCnt + 7) & ~7;
+}
+
 template<typename T>
-T read_from_ifs(std::ifstream &ifs)
+inline T read_from_ifs(std::ifstream &ifs)
 {
     T val;
     ifs.read(reinterpret_cast<char *>(&val), sizeof(T));
