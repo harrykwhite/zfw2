@@ -396,9 +396,9 @@ void CharBatch::write(const std::string &text, const FontAlignHor alignHor, cons
     zfw2_common::Vec2D charDrawPosPen = {0};
 
     std::vector<int> textLineWidths(m_slotCnt);
-    int textFirstLineMinOffs;
+    int textFirstLineMinOffs = 0;
     bool textFirstLineMinOffsUpdated = false;
-    int textLastLineMaxHeight;
+    int textLastLineMaxHeight = 0;
     bool textLastLineMaxHeightUpdated = false;
     int textLineCnter = 0;
 
