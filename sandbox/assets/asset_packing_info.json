@@ -25,5 +25,8 @@
 	],
 	"sound_rfps": [
         "sounds/bloop.wav"
+    ],
+	"music_rfps": [
+        "music/music.wav"
     ]
 }

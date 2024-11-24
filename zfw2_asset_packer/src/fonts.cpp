@@ -47,16 +47,16 @@ static zfw2_common::Vec2DInt calc_font_tex_size(const FT_Face ftFace, const FT_L
     };
 }
 
-static std::unique_ptr<FontDataWithPixels> get_font_data_with_px(const std::string &filePath, const int ptSize, const FT_Library ftLib)
+static std::unique_ptr<FontDataWithPixels> get_font_data_with_px(const std::filesystem::path &filePath, const int ptSize, const FT_Library ftLib)
 {
     auto fontDataWithPx = std::make_unique<FontDataWithPixels>();
 
     // Set up the font face.
     FT_Face ftFace;
 
-    if (FT_New_Face(ftLib, filePath.c_str(), 0, &ftFace))
+    if (FT_New_Face(ftLib, filePath.string().c_str(), 0, &ftFace))
     {
-        std::cout << "ERROR: Failed to create a FreeType face object for font with file path \"" << filePath << "\"." << std::endl;
+        std::cout << "ERROR: Failed to create a FreeType face object for font with file path " << filePath << "." << std::endl;
         return nullptr;
     }
 
@@ -148,7 +148,7 @@ static std::unique_ptr<FontDataWithPixels> get_font_data_with_px(const std::stri
     return fontDataWithPx;
 }
 
-bool pack_fonts(const std::vector<FontPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir)
+bool pack_fonts(const std::vector<FontPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::filesystem::path &inputDir)
 {
     FT_Library ftLib;
 
@@ -160,10 +160,10 @@ bool pack_fonts(const std::vector<FontPackingInfo> &packingInfos, std::ofstream 
 
     for (const FontPackingInfo &packingInfo : packingInfos)
     {
-        const std::string fontFilePath = assetsDir + "/" + packingInfo.relFilePath;
+        const std::filesystem::path fontFilePath = inputDir / packingInfo.relFilePath;
 
         // Get the font data using FreeType.
-        const std::unique_ptr<FontDataWithPixels> fontDataWithPx = get_font_data_with_px(fontFilePath, packingInfo.ptSize, ftLib);
+        const std::unique_ptr<FontDataWithPixels> fontDataWithPx = get_font_data_with_px(fontFilePath.string(), packingInfo.ptSize, ftLib);
 
         if (!fontDataWithPx)
         {
@@ -175,7 +175,7 @@ bool pack_fonts(const std::vector<FontPackingInfo> &packingInfos, std::ofstream 
         assetsFileOS.write(reinterpret_cast<const char *>(&fontDataWithPx->fd), sizeof(fontDataWithPx->fd));
         assetsFileOS.write(reinterpret_cast<const char *>(fontDataWithPx->texPxData.get()), fontDataWithPx->fd.texSize.x * fontDataWithPx->fd.texSize.y * zfw2_common::gk_fontTexChannelCnt);
 
-        std::cout << "Successfully packed font with file path \"" << fontFilePath << "\" and point size " << packingInfo.ptSize << "." << std::endl;
+        std::cout << "Successfully packed font with file path " << fontFilePath << " and point size " << packingInfo.ptSize << "." << std::endl;
     }
 
     FT_Done_FreeType(ftLib);

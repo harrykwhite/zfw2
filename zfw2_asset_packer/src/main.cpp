@@ -76,6 +76,23 @@ static std::vector<SoundPackingInfo> get_sound_packing_infos_from_json(const nlo
     return packingInfos;
 }
 
+static std::vector<MusicPackingInfo> get_music_packing_infos_from_json(const nlohmann::json &json)
+{
+    std::vector<MusicPackingInfo> packingInfos;
+
+    if (json.contains("music_rfps"))
+    {
+        for (const auto &musicRFP : json["music_rfps"])
+        {
+            MusicPackingInfo packingInfo;
+            packingInfo.relFilePath = musicRFP;
+            packingInfos.emplace_back(packingInfo);
+        }
+    }
+
+    return packingInfos;
+}
+
 int main(const int argCnt, const char *const *const args)
 {
     if (argCnt > 3)
@@ -84,29 +101,29 @@ int main(const int argCnt, const char *const *const args)
         return EXIT_FAILURE;
     }
 
-    // Get the assets directory either from the command-line arguments or from user input.
-    const std::string assetsDir = [argCnt, args]() -> std::string
+    // Get the input directory either from the command-line arguments or from user input.
+    const std::filesystem::path inputDir = [argCnt, args]()
     {
         if (argCnt > 1)
         {
             return std::string(args[1]);
         }
 
-        std::string assetsDir;
-        std::cout << "Enter the assets directory (i.e. the directory containing the asset packing information JSON file): ";
-        std::getline(std::cin, assetsDir);
-        return assetsDir;
+        std::string dir;
+        std::cout << "Enter the input directory (i.e. the directory containing the asset packing information JSON file): ";
+        std::getline(std::cin, dir);
+        return dir;
     }();
 
-    // Verify that the assets directory exists.
-    if (!std::filesystem::exists(assetsDir))
+    // Verify that the input directory exists.
+    if (!std::filesystem::exists(inputDir))
     {
-        std::cerr << "ERROR: The provided assets directory \"" << assetsDir << "\"does not exist!" << std::endl;
+        std::cerr << "ERROR: The provided input directory \"" << inputDir << "\" does not exist!" << std::endl;
         return EXIT_FAILURE;
     }
 
-    // Get the output directory for the assets file either from the command-line arguments or from user input.
-    const std::string assetsFileOutputDir = [argCnt, args]() -> std::string
+    // Get the output directory either from the command-line arguments or from user input.
+    const std::filesystem::path outputDir = [argCnt, args]()
     {
         if (argCnt > 2)
         {
@@ -114,13 +131,20 @@ int main(const int argCnt, const char *const *const args)
         }
 
         std::string outputDir;
-        std::cout << "Enter the output directory for the assets file: ";
+        std::cout << "Enter the output directory: ";
         std::getline(std::cin, outputDir);
         return outputDir;
     }();
 
+    // Verify that the output directory exists.
+    if (!std::filesystem::exists(outputDir))
+    {
+        std::cerr << "ERROR: The provided output directory \"" << outputDir << "\" does not exist!" << std::endl;
+        return EXIT_FAILURE;
+    }
+
     // Open the packing information JSON file.
-    const std::string packingInfoFilePath = assetsDir + "/" + gk_assetPackingInfoFileName;
+    const std::filesystem::path packingInfoFilePath = inputDir / gk_assetPackingInfoFileName;
     std::ifstream packingInfoFileIS(packingInfoFilePath);
 
     if (!packingInfoFileIS.is_open())
@@ -141,43 +165,48 @@ int main(const int argCnt, const char *const *const args)
         return EXIT_FAILURE;
     }
 
-    // Get asset packing information from the JSON.
+    // Get asset packing information from the JSON header.
     const std::vector<TexPackingInfo> texPackingInfos = get_tex_packing_infos_from_json(packingInfoJSON);
     const std::vector<ShaderProgPackingInfo> shaderProgPackingInfos = get_shader_prog_packing_infos_from_json(packingInfoJSON);
     const std::vector<FontPackingInfo> fontPackingInfos = get_font_packing_infos_from_json(packingInfoJSON);
     const std::vector<SoundPackingInfo> soundPackingInfos = get_sound_packing_infos_from_json(packingInfoJSON);
+    const std::vector<MusicPackingInfo> musicPackingInfos = get_music_packing_infos_from_json(packingInfoJSON);
 
-    // Close the packing information JSON file. (TODO: Do this via scoping.)
+    // Close the packing information JSON file.
     packingInfoFileIS.close();
 
     // Create the output assets file.
-    const std::string assetsFilePath = assetsFileOutputDir + "/" + zfw2_common::gk_assetsFileName;
-    std::ofstream assetsFileOS(assetsFilePath, std::ios::binary);
+    const std::filesystem::path outputAssetsFilePath = outputDir / zfw2_common::gk_assetsFileName;
+    std::ofstream outputAssetsFileOS(outputAssetsFilePath, std::ios::binary);
 
-    if (!assetsFileOS.is_open())
+    if (!outputAssetsFileOS.is_open())
     {
-        std::cerr << "ERROR: Failed to create or replace the output assets file with path \"" << assetsFilePath << "\"!" << std::endl;
+        std::cerr << "ERROR: Failed to create or replace the output assets file with path \"" << outputAssetsFilePath << "\"!" << std::endl;
         return EXIT_FAILURE;
     }
 
-    // Write the asset counts (the file header).
+    // Write the asset counts (the header).
     const int texCnt = texPackingInfos.size();
-    assetsFileOS.write(reinterpret_cast<const char *>(&texCnt), sizeof(texCnt));
+    outputAssetsFileOS.write(reinterpret_cast<const char *>(&texCnt), sizeof(texCnt));
 
     const int shaderProgCnt = shaderProgPackingInfos.size();
-    assetsFileOS.write(reinterpret_cast<const char *>(&shaderProgCnt), sizeof(shaderProgCnt));
+    outputAssetsFileOS.write(reinterpret_cast<const char *>(&shaderProgCnt), sizeof(shaderProgCnt));
 
     const int fontCnt = fontPackingInfos.size();
-    assetsFileOS.write(reinterpret_cast<const char *>(&fontCnt), sizeof(fontCnt));
+    outputAssetsFileOS.write(reinterpret_cast<const char *>(&fontCnt), sizeof(fontCnt));
 
     const int soundCnt = soundPackingInfos.size();
-    assetsFileOS.write(reinterpret_cast<const char *>(&soundCnt), sizeof(soundCnt));
+    outputAssetsFileOS.write(reinterpret_cast<const char *>(&soundCnt), sizeof(soundCnt));
+
+    const int musicCnt = musicPackingInfos.size();
+    outputAssetsFileOS.write(reinterpret_cast<const char *>(&musicCnt), sizeof(musicCnt));
 
     // Pack the assets.
-    if (!pack_textures(texPackingInfos, assetsFileOS, assetsDir)
-        || !pack_shader_progs(shaderProgPackingInfos, assetsFileOS, assetsDir)
-        || !pack_fonts(fontPackingInfos, assetsFileOS, assetsDir)
-        || !pack_sounds(soundPackingInfos, assetsFileOS, assetsDir))
+    if (!pack_textures(texPackingInfos, outputAssetsFileOS, inputDir)
+        || !pack_shader_progs(shaderProgPackingInfos, outputAssetsFileOS, inputDir)
+        || !pack_fonts(fontPackingInfos, outputAssetsFileOS, inputDir)
+        || !pack_sounds(soundPackingInfos, outputAssetsFileOS, inputDir)
+        || !pack_music(musicPackingInfos, outputAssetsFileOS, inputDir, outputDir))
     {
         std::remove(zfw2_common::gk_assetsFileName.c_str());
         return EXIT_FAILURE;

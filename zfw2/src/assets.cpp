@@ -150,6 +150,7 @@ Assets load_assets(bool &err)
     const int shaderProgCnt = read_from_ifs<int>(ifs);
     const int fontCnt = read_from_ifs<int>(ifs);
     const int soundCnt = read_from_ifs<int>(ifs);
+    const int musicCnt = read_from_ifs<int>(ifs);
 
     //
     // Textures
@@ -266,6 +267,7 @@ Assets load_assets(bool &err)
         .shaderProgCnt = shaderProgCnt,
         .fontCnt = fontCnt,
         .soundCnt = soundCnt,
+        .musicCnt = musicCnt,
 
         .texGLIDs = std::move(texGLIDs),
         .texSizes = std::move(texSizes),

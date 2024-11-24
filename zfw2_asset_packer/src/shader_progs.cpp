@@ -1,21 +1,21 @@
 #include <iostream>
 #include "common.h"
 
-bool pack_shader_progs(const std::vector<ShaderProgPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir)
+bool pack_shader_progs(const std::vector<ShaderProgPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::filesystem::path &inputDir)
 {
     for (const ShaderProgPackingInfo &packingInfo : packingInfos)
     {
         // Pack vertex shader then fragment shader.
         for (int i = 0; i < 2; i++)
         {
-            const std::string &shaderFilePath = assetsDir + "/" + (i == 0 ? packingInfo.vertShaderRFP : packingInfo.fragShaderRFP);
+            const std::filesystem::path shaderFilePath = inputDir / (i == 0 ? packingInfo.vertShaderRFP : packingInfo.fragShaderRFP);
 
             // Open the shader file.
             std::ifstream shaderIS(shaderFilePath, std::ios::binary | std::ios::ate);
 
             if (!shaderIS.is_open())
             {
-                std::cerr << "ERROR: Failed to open shader \"" << shaderFilePath << "\"!" << std::endl;
+                std::cerr << "ERROR: Failed to open shader " << shaderFilePath << "!" << std::endl;
                 return false;
             }
 
@@ -36,7 +36,7 @@ bool pack_shader_progs(const std::vector<ShaderProgPackingInfo> &packingInfos, s
             // Write the shader content to assets file.
             assetsFileOS.write(shaderSrc.get(), shaderSrcSize);
 
-            std::cout << "Successfully packed shader \"" << shaderFilePath << "\"." << std::endl;
+            std::cout << "Successfully packed shader " << shaderFilePath << "." << std::endl;
         }
     }
 

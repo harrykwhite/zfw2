@@ -4,14 +4,15 @@
 #include <zfw2_common/assets.h>
 #include "common.h"
 
-bool pack_textures(const std::vector<TexPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::string &assetsDir)
+bool pack_textures(const std::vector<TexPackingInfo> &packingInfos, std::ofstream &assetsFileOS, const std::filesystem::path &inputDir)
 {
     for (const TexPackingInfo &packingInfo : packingInfos)
     {
-        const std::string texFilePath = assetsDir + "/" + packingInfo.relFilePath;
+        const std::filesystem::path texFilePath = inputDir / packingInfo.relFilePath;
+        const std::string texFilePathStr = texFilePath.string();
 
         zfw2_common::Vec2DInt texSize;
-        stbi_uc *const pxData = stbi_load(texFilePath.c_str(), &texSize.x, &texSize.y, nullptr, zfw2_common::gk_texChannelCnt);
+        stbi_uc *const pxData = stbi_load(texFilePathStr.c_str(), &texSize.x, &texSize.y, nullptr, zfw2_common::gk_texChannelCnt);
 
         if (!pxData)
         {

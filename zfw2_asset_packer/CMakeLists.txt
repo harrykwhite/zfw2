@@ -7,7 +7,7 @@ add_executable(zfw2_asset_packer
 	src/textures.cpp
 	src/shader_progs.cpp
 	src/fonts.cpp
-	src/sounds.cpp
+	src/sounds_and_music.cpp
 	${CMAKE_SOURCE_DIR}/vendor/stb_image/src/stb_image.c
 
 	src/common.h

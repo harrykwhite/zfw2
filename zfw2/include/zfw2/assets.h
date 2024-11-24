@@ -86,6 +86,7 @@ struct Assets
     const int shaderProgCnt;
     const int fontCnt;
     const int soundCnt;
+    const int musicCnt;
 
     const std::unique_ptr<const GLID[]> texGLIDs;
     const std::unique_ptr<const zfw2_common::Vec2DInt[]> texSizes;
