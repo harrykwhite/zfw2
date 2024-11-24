@@ -1,6 +1,6 @@
-#include "common.h"
-
+#include <zfw2_common/assets.h>
 #include <AudioFile.h>
+#include "common.h"
 
 static bool load_audio_file_and_write_data(const std::filesystem::path filePath, std::ofstream &metadataOFS, std::ofstream &samplesOFS)
 {
@@ -15,19 +15,18 @@ static bool load_audio_file_and_write_data(const std::filesystem::path filePath,
     }
 
     // Write the audio file metadata.
-    const int channelCnt = audioFile.getNumChannels();
-    metadataOFS.write(reinterpret_cast<const char *>(&channelCnt), sizeof(channelCnt));
+    const zfw2_common::AudioMetadata metadata = {
+        audioFile.getNumChannels(),
+        audioFile.getNumSamplesPerChannel(),
+        audioFile.getSampleRate()
+    };
 
-    const int sampleCntPerChannel = audioFile.getNumSamplesPerChannel();
-    metadataOFS.write(reinterpret_cast<const char *>(&sampleCntPerChannel), sizeof(sampleCntPerChannel));
-
-    const unsigned int sampleRate = audioFile.getSampleRate();
-    metadataOFS.write(reinterpret_cast<const char *>(&sampleRate), sizeof(sampleRate));
-
+    metadataOFS.write(reinterpret_cast<const char *>(&metadata), sizeof(metadata));
+    
     // Write the sample data.
-    if (channelCnt == 1)
+    if (metadata.channelCnt == 1)
     {
-        for (int i = 0; i < sampleCntPerChannel; ++i)
+        for (int i = 0; i < metadata.sampleCntPerChannel; ++i)
         {
             const short sample = audioFile.samples[0][i];
             samplesOFS.write(reinterpret_cast<const char *>(&sample), sizeof(sample));
@@ -36,7 +35,7 @@ static bool load_audio_file_and_write_data(const std::filesystem::path filePath,
     else
     {
         // The channel count is 2.
-        for (int i = 0; i < sampleCntPerChannel; ++i)
+        for (int i = 0; i < metadata.sampleCntPerChannel; ++i)
         {
             const short sample1 = audioFile.samples[0][i];
             samplesOFS.write(reinterpret_cast<const char *>(&sample1), sizeof(sample1));
@@ -65,10 +64,19 @@ bool pack_music(const std::vector<MusicPackingInfo> &packingInfos, std::ofstream
     {
         const std::filesystem::path musicFilePath = inputDir / packingInfo.relFilePath;
 
-        // Create or replace the output music file.
+        // Determine the output music file name and path.
         const std::string outputMusicFileName = musicFilePath.stem().string() + ".zfw2dat";
+        const int outputMusicFileNameLen = outputMusicFileName.size();
+
+        if (outputMusicFileNameLen > 255)
+        {
+            std::cerr << "ERROR: The determined output music file name \"" << outputMusicFileName << "\" is too long." << std::endl;
+            return false;
+        }
+
         const std::filesystem::path outputMusicFilePath = outputDir / outputMusicFileName;
 
+        // Open the output music file.
         std::ofstream outputMusicFileOS(outputMusicFileName, std::ios::binary);
 
         if (!outputMusicFileOS.is_open())
@@ -78,7 +86,9 @@ bool pack_music(const std::vector<MusicPackingInfo> &packingInfos, std::ofstream
         }
 
         // Write the name of the output music file to the input assets file.
-        outputMusicFileOS.write(outputMusicFileName.c_str(), outputMusicFileName.size() + 1);
+        const unsigned char outputMusicFileNameLenUC = outputMusicFileName.size();
+        outputMusicFileOS.write(reinterpret_cast<const char *>(&outputMusicFileNameLenUC), sizeof(outputMusicFileNameLenUC)); // First byte is the string length.
+        outputMusicFileOS.write(outputMusicFileName.c_str(), outputMusicFileName.size()); // The rest of the bytes are the characters without a terminating '\0'.
 
         // Load the music file and write its metadata to the input assets file, and samples to the output music file.
         load_audio_file_and_write_data(musicFilePath, assetsFileOS, outputMusicFileOS);

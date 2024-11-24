@@ -33,4 +33,11 @@ struct FontData
     zfw2_common::Vec2DInt texSize;
 };
 
+struct AudioMetadata
+{
+    int channelCnt;
+    int sampleCntPerChannel;
+    unsigned int sampleRate;
+};
+
 }

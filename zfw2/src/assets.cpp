@@ -247,18 +247,41 @@ Assets load_assets(bool &err)
 
         for (int i = 0; i < soundCnt; ++i)
         {
-            const auto channelCnt = read_from_ifs<int>(ifs);
-            const auto sampleCntPerChannel = read_from_ifs<int>(ifs);
-            const auto sampleRate = read_from_ifs<unsigned int>(ifs);
+            const auto metadata = read_from_ifs<zfw2_common::AudioMetadata>(ifs);
 
-            const int sampleCnt = sampleCntPerChannel * channelCnt;
+            const int sampleCnt = metadata.sampleCntPerChannel * metadata.channelCnt;
             const auto sampleData = std::make_unique<short[]>(sampleCnt);
             const int sampleDataSize = sampleCnt * sizeof(short);
 
             ifs.read(reinterpret_cast<char *>(sampleData.get()), sampleDataSize);
 
-            const ALenum format = channelCnt == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
-            alBufferData(soundBufALIDs[i], format, sampleData.get(), sampleDataSize, sampleRate);
+            const ALenum format = metadata.channelCnt == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
+            alBufferData(soundBufALIDs[i], format, sampleData.get(), sampleDataSize, metadata.sampleRate);
+        }
+    }
+
+    //
+    // Music
+    //
+    std::unique_ptr<ALID[]> musicBufALIDs = nullptr;
+    std::unique_ptr<std::string[]> musicFilenames = nullptr;
+    std::unique_ptr<zfw2_common::AudioMetadata[]> musicMetadatas = nullptr;
+
+    if (musicCnt > 0)
+    {
+        musicBufALIDs = std::make_unique<ALID[]>(musicCnt);
+        alGenBuffers(musicCnt, musicBufALIDs.get());
+
+        musicFilenames = std::make_unique<std::string[]>(musicCnt);
+        musicMetadatas = std::make_unique<zfw2_common::AudioMetadata[]>(musicCnt);
+
+        for (int i = 0; i < musicCnt; ++i)
+        {
+            const auto filenameLen = read_from_ifs<unsigned char>(ifs);
+            std::string filename(filenameLen, '\0');
+            ifs.read(filename.data(), filenameLen);
+
+            ifs.read(reinterpret_cast<char *>(&musicMetadatas[i]), sizeof(musicMetadatas[i]));
         }
     }
 
@@ -277,7 +300,11 @@ Assets load_assets(bool &err)
         .fontTexGLIDs = std::move(fontTexGLIDs),
         .fontDatas = std::move(fontDatas),
 
-        .soundBufALIDs = std::move(soundBufALIDs)
+        .soundBufALIDs = std::move(soundBufALIDs),
+
+        .musicBufALIDs = std::move(musicBufALIDs),
+        .musicFilenames = std::move(musicFilenames),
+        .musicMetadatas = std::move(musicMetadatas)
     };
 }
 
