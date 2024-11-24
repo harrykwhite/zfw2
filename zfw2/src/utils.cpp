@@ -26,19 +26,11 @@ void DynamicBitset::resize(const int bitCnt)
 
 int DynamicBitset::get_first_inactive_bit_index() const
 {
-    for (int i = 0; i < m_byteCnt; ++i)
+    for (int i = 0; i < m_bitCnt; ++i)
     {
-        if (m_bytes[i] == 0xFF)
+        if (!is_bit_active(i))
         {
-            continue;
-        }
-
-        for (int j = 0; j < 8; ++j)
-        {
-            if (!is_bit_active(j))
-            {
-                return (i * 8) + j;
-            }
+            return i;
         }
     }
 
