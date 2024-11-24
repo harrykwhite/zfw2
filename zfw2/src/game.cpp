@@ -1,5 +1,7 @@
 #include <zfw2/game.h>
 
+#include <iostream>
+
 #include <glad/glad.h>
 #include <zfw2_common/assets.h>
 
@@ -63,15 +65,10 @@ static inline zfw2_common::Vec2DInt get_glfw_window_size(GLFWwindow *const windo
     return {width, height};
 }
 
-#if 0
-static inline void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height)
-{
-    glViewport(0, 0, width, height);
-}
-#endif
-
 static inline void glfw_scroll_callback(GLFWwindow *const window, const double xOffs, const double yOffs)
 {
+    int *const scroll = static_cast<int *>(glfwGetWindowUserPointer(window));
+    *scroll = static_cast<int>(yOffs);
 }
 
 void run_game(const SceneFactory &initSceneFactory)
@@ -109,7 +106,6 @@ void run_game(const SceneFactory &initSceneFactory)
     glfwMakeContextCurrent(glfwWindow);
 
     // Set GLFW window callbacks.
-    //glfwSetWindowSizeCallback(glfwWindow, glfw_window_size_callback);
     glfwSetScrollCallback(glfwWindow, glfw_scroll_callback);
 
     // Hide the cursor.
