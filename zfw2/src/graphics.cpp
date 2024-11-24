@@ -5,6 +5,13 @@
 namespace zfw2
 {
 
+static inline int get_tex_unit_limit()
+{
+    int limit;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &limit);
+    return std::min(limit, gk_texUnitLimitCap);
+}
+
 SpriteBatch::SpriteBatch(const int slotCnt) : m_slotCnt(slotCnt), m_slotActivity(slotCnt), m_slotTexUnits(std::make_unique<int[]>(slotCnt))
 {
     assert(slotCnt % 8 == 0);
@@ -133,16 +140,17 @@ void SpriteBatch::draw(const InternalShaderProgs &internalShaderProgs, const Ass
     glUniformMatrix4fv(glGetUniformLocation(progGLID, "u_view"), 1, false, reinterpret_cast<const float *>(viewMat.elems));
 
     // Set up texture units.
-    int texUnits[gk_texUnitLimit];
-    std::iota(texUnits, texUnits + gk_texUnitLimit, 0);
+    const int texUnitLimit = get_tex_unit_limit();
+    int texUnits[gk_texUnitLimitCap];
+    std::iota(texUnits, texUnits + texUnitLimit, 0);
 
-    for (int i = 0; i < gk_texUnitLimit; ++i)
+    for (int i = 0; i < texUnitLimit; ++i)
     {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, m_texUnitRefCnts[i] > 0 ? assets.texGLIDs[m_texUnitTexIndexes[i]] : 0);
     }
 
-    glUniform1iv(glGetUniformLocation(progGLID, "u_textures"), gk_texUnitLimit, texUnits);
+    glUniform1iv(glGetUniformLocation(progGLID, "u_textures"), texUnitLimit, texUnits);
 
     // Draw the batch.
     glBindVertexArray(m_vertArrayGLID);
@@ -265,7 +273,9 @@ int SpriteBatch::find_tex_unit_to_use(const int texIndex) const
 {
     int freeTexUnit = -1;
 
-    for (int i = 0; i < gk_texUnitLimit; ++i)
+    const int texUnitLimit = get_tex_unit_limit();
+
+    for (int i = 0; i < texUnitLimit; ++i)
     {
         if (!m_texUnitRefCnts[i])
         {

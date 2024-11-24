@@ -58,7 +58,7 @@ struct CharBatchKey
     int batchIndex;
 };
 
-constexpr int gk_texUnitLimit = 32;
+constexpr int gk_texUnitLimitCap = 32;
 
 class SpriteBatch
 {
@@ -87,8 +87,8 @@ private:
     DynamicBitset m_slotActivity;
     std::unique_ptr<int[]> m_slotTexUnits; // What texture unit each slot is mapped to.
 
-    int m_texUnitTexIndexes[gk_texUnitLimit] = {}; // What texture index (of an actual texture asset) each unit maps to.
-    int m_texUnitRefCnts[gk_texUnitLimit] = {}; // How many slots are mapped to each unit.
+    int m_texUnitTexIndexes[gk_texUnitLimitCap] = {}; // What texture index (of an actual texture asset) each unit maps to.
+    int m_texUnitRefCnts[gk_texUnitLimitCap] = {}; // How many slots are mapped to each unit.
 
     int find_tex_unit_to_use(const int texIndex) const;
 };
