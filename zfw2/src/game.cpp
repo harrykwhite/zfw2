@@ -63,10 +63,12 @@ static inline zfw2_common::Vec2DInt get_glfw_window_size(GLFWwindow *const windo
     return {width, height};
 }
 
+#if 0
 static inline void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height)
 {
     glViewport(0, 0, width, height);
 }
+#endif
 
 static inline void glfw_scroll_callback(GLFWwindow *const window, const double xOffs, const double yOffs)
 {
@@ -107,7 +109,7 @@ void run_game(const SceneFactory &initSceneFactory)
     glfwMakeContextCurrent(glfwWindow);
 
     // Set GLFW window callbacks.
-    glfwSetWindowSizeCallback(glfwWindow, glfw_window_size_callback);
+    //glfwSetWindowSizeCallback(glfwWindow, glfw_window_size_callback);
     glfwSetScrollCallback(glfwWindow, glfw_scroll_callback);
 
     // Hide the cursor.
@@ -186,7 +188,17 @@ void run_game(const SceneFactory &initSceneFactory)
 
     while (!glfwWindowShouldClose(glfwWindow))
     {
+        const zfw2_common::Vec2DInt windowSizeBeforePoll = get_glfw_window_size(glfwWindow);
+
         glfwPollEvents();
+
+        const zfw2_common::Vec2DInt windowSize = get_glfw_window_size(glfwWindow);
+
+        if (windowSize != windowSizeBeforePoll)
+        {
+            glViewport(0, 0, windowSize.x, windowSize.y);
+            m_scene->on_window_resize(windowSize);
+        }
 
         const double frameTimeLast = frameTime;
         frameTime = glfwGetTime();
