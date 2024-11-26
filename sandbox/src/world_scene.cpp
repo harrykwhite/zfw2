@@ -11,7 +11,7 @@ WorldScene::WorldScene(const zfw2::Assets &assets, const zfw2_common::Vec2DInt w
     m_playerPos = {windowSize.x / 2.0f, windowSize.y / 2.0f};
 }
 
-void WorldScene::on_tick(const zfw2::InputManager &inputManager, zfw2::SoundManager &soundManager, const zfw2::Assets &assets, zfw2::SceneFactory &sceneChangeFactory)
+void WorldScene::on_tick(const zfw2::InputManager &inputManager, zfw2::SoundSrcCollection &soundSrcs, zfw2::MusicSrcCollection &musicSrcCollection, const zfw2::Assets &assets, zfw2::SceneFactory &sceneChangeFactory)
 {
     m_renderer.write_to_sprite_batch_slot(m_playerSpriteBatchSlotKey, assets, m_playerPos, {0, 0, 16, 16}, {0.5f, 0.5f});
 }

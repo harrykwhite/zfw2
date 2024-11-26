@@ -16,10 +16,22 @@ struct GameCleanupInfo
     ALCcontext *alContext;
     const Assets *assets;
     const InternalShaderProgs *internalShaderProgs;
+    SoundSrcCollection *soundSrcs;
+    MusicSrcCollection *musicSrcCollection;
 };
 
-static void clean_game(const GameCleanupInfo &cleanupInfo)
+static void clean_game(GameCleanupInfo &cleanupInfo)
 {
+    if (cleanupInfo.musicSrcCollection)
+    {
+        clean_music_srcs(*cleanupInfo.musicSrcCollection);
+    }
+
+    if (cleanupInfo.soundSrcs)
+    {
+        clean_sound_srcs(*cleanupInfo.soundSrcs);
+    }
+
     if (cleanupInfo.internalShaderProgs)
     {
         clean_internal_shader_progs(*cleanupInfo.internalShaderProgs);
@@ -35,12 +47,12 @@ static void clean_game(const GameCleanupInfo &cleanupInfo)
         alcMakeContextCurrent(nullptr);
         alcDestroyContext(cleanupInfo.alContext);
     }
-    
+
     if (cleanupInfo.alDevice)
     {
         alcCloseDevice(cleanupInfo.alDevice);
     }
-    
+
     if (cleanupInfo.glfwWindow)
     {
         glfwDestroyWindow(cleanupInfo.glfwWindow);
@@ -167,8 +179,14 @@ void run_game(const SceneFactory &initSceneFactory)
     int glfwCallbackMouseScroll = 0; // This is an axis representing the scroll wheel movement. It is updated by the GLFW scroll callback and gets reset after a new input state is generated.
     glfwSetWindowUserPointer(glfwWindow, &glfwCallbackMouseScroll);
 
-    // Create the sound manager.
-    SoundManager soundManager;
+    // Set up audio.
+    MemArena memArena(1024 * 1024 * 128); // TEMP
+
+    SoundSrcCollection soundSrcs = {};
+    cleanupInfo.soundSrcs = &soundSrcs;
+
+    MusicSrcCollection musicSrcCollection = {};
+    cleanupInfo.musicSrcCollection = &musicSrcCollection;
 
     // Create the initial scene.
     std::unique_ptr<Scene> m_scene = initSceneFactory(assets, get_glfw_window_size(glfwWindow));
@@ -206,10 +224,13 @@ void run_game(const SceneFactory &initSceneFactory)
 
         if (tickCnt > 0)
         {
+            // Update input.
             inputManager.refresh(glfwWindow, glfwCallbackMouseScroll);
             glfwCallbackMouseScroll = 0;
 
-            soundManager.refresh_srcs();
+            // Update audio.
+            handle_auto_release_sound_srcs(soundSrcs);
+            refresh_music_srcs(musicSrcCollection, assets, memArena);
 
             // Execute ticks.
             int i = 0;
@@ -218,7 +239,7 @@ void run_game(const SceneFactory &initSceneFactory)
             {
                 SceneFactory sceneChangeFactory; // This will be assigned if a scene change is requested.
 
-                m_scene->on_tick(inputManager, soundManager, assets, sceneChangeFactory);
+                m_scene->on_tick(inputManager, soundSrcs, musicSrcCollection, assets, sceneChangeFactory);
 
                 if (sceneChangeFactory)
                 {

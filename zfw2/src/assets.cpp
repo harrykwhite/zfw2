@@ -263,23 +263,20 @@ Assets load_assets(bool &err)
     //
     // Music
     //
-    std::unique_ptr<ALID[]> musicBufALIDs = nullptr;
     std::unique_ptr<std::string[]> musicFilenames = nullptr;
     std::unique_ptr<zfw2_common::AudioMetadata[]> musicMetadatas = nullptr;
 
     if (musicCnt > 0)
     {
-        musicBufALIDs = std::make_unique<ALID[]>(musicCnt);
-        alGenBuffers(musicCnt, musicBufALIDs.get());
-
         musicFilenames = std::make_unique<std::string[]>(musicCnt);
         musicMetadatas = std::make_unique<zfw2_common::AudioMetadata[]>(musicCnt);
 
         for (int i = 0; i < musicCnt; ++i)
         {
             const auto filenameLen = read_from_ifs<unsigned char>(ifs);
-            std::string filename(filenameLen, '\0');
-            ifs.read(filename.data(), filenameLen);
+
+            musicFilenames[i] = std::string(filenameLen, '\0');
+            ifs.read(musicFilenames[i].data(), filenameLen);
 
             ifs.read(reinterpret_cast<char *>(&musicMetadatas[i]), sizeof(musicMetadatas[i]));
         }
@@ -302,7 +299,6 @@ Assets load_assets(bool &err)
 
         .soundBufALIDs = std::move(soundBufALIDs),
 
-        .musicBufALIDs = std::move(musicBufALIDs),
         .musicFilenames = std::move(musicFilenames),
         .musicMetadatas = std::move(musicMetadatas)
     };

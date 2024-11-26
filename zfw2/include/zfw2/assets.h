@@ -13,6 +13,29 @@ namespace zfw2
 constexpr int gk_spriteQuadShaderProgVertCnt = 11;
 constexpr int gk_charQuadShaderProgVertCnt = 4;
 
+#if 0
+struct Assets
+{
+    const int texCnt;
+    const int shaderProgCnt;
+    const int fontCnt;
+    const int soundCnt;
+    const int musicCnt;
+
+    const GLID *const texGLIDs;
+    const zfw2_common::Vec2DInt *const texSizes;
+
+    const GLID *const shaderProgGLIDs;
+
+    const GLID *const fontTexGLIDs;
+    const zfw2_common::FontData *const fontDatas;
+
+    const ALID *const soundBufALIDs;
+
+    const std::string *const musicFilenames;
+    const zfw2_common::AudioMetadata *const musicMetadatas;
+};
+#else
 struct Assets
 {
     const int texCnt;
@@ -31,10 +54,10 @@ struct Assets
 
     const std::unique_ptr<const ALID[]> soundBufALIDs;
 
-    const std::unique_ptr<const ALID[]> musicBufALIDs;
     const std::unique_ptr<const std::string[]> musicFilenames;
     const std::unique_ptr<const zfw2_common::AudioMetadata[]> musicMetadatas;
 };
+#endif
 
 struct InternalShaderProgs
 {

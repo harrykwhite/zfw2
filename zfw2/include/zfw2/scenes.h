@@ -21,7 +21,7 @@ public:
     {
     }
 
-    virtual void on_tick(const InputManager &inputManager, zfw2::SoundManager &soundManager, const Assets &assets, zfw2::SceneFactory &sceneChangeFactory) = 0;
+    virtual void on_tick(const InputManager &inputManager, zfw2::SoundSrcCollection &soundSrcs, zfw2::MusicSrcCollection &musicSrcCollection, const Assets &assets, zfw2::SceneFactory &sceneChangeFactory) = 0;
 
     virtual void on_window_resize(const zfw2_common::Vec2DInt windowSize)
     {

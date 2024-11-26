@@ -118,7 +118,7 @@ int main(const int argCnt, const char *const *const args)
     // Verify that the input directory exists.
     if (!std::filesystem::exists(inputDir))
     {
-        std::cerr << "ERROR: The provided input directory \"" << inputDir << "\" does not exist!" << std::endl;
+        std::cerr << "ERROR: The provided input directory " << inputDir << " does not exist!" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -139,7 +139,7 @@ int main(const int argCnt, const char *const *const args)
     // Verify that the output directory exists.
     if (!std::filesystem::exists(outputDir))
     {
-        std::cerr << "ERROR: The provided output directory \"" << outputDir << "\" does not exist!" << std::endl;
+        std::cerr << "ERROR: The provided output directory " << outputDir << " does not exist!" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -181,7 +181,7 @@ int main(const int argCnt, const char *const *const args)
 
     if (!outputAssetsFileOS.is_open())
     {
-        std::cerr << "ERROR: Failed to create or replace the output assets file with path \"" << outputAssetsFilePath << "\"!" << std::endl;
+        std::cerr << "ERROR: Failed to create or replace the output assets file with path " << outputAssetsFilePath << "!" << std::endl;
         return EXIT_FAILURE;
     }
 

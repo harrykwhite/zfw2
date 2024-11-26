@@ -12,6 +12,7 @@ add_library(zfw2 STATIC
     src/graphics.cpp
     src/audio.cpp
     src/scenes.cpp
+    src/memory.cpp
     src/utils.cpp
     ${PARENT_SRC_DIR}/vendor/glad/src/glad.c
 
@@ -21,6 +22,7 @@ add_library(zfw2 STATIC
     include/zfw2/graphics.h
     include/zfw2/audio.h
     include/zfw2/scenes.h
+    include/zfw2/memory.h
     include/zfw2/utils.h
     ${PARENT_SRC_DIR}/vendor/glad/include/glad/glad.h
     ${PARENT_SRC_DIR}/vendor/glad/include/KHR/khrplatform.h
