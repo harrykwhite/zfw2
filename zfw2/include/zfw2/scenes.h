@@ -10,6 +10,7 @@
 namespace zfw2
 {
 
+#if 0
 class Scene;
 
 using SceneFactory = std::function<std::unique_ptr<Scene>(const Assets &assets, const zfw2_common::Vec2DInt windowSize)>;
@@ -17,7 +18,7 @@ using SceneFactory = std::function<std::unique_ptr<Scene>(const Assets &assets, 
 class Scene
 {
 public:
-    Scene(const Assets &assets, const zfw2_common::Vec2DInt windowSize, const Color bgColor = Color::create_black()) : m_renderer(bgColor)
+    Scene(const Assets &assets, const zfw2_common::Vec2DInt windowSize, MemArena &memArena, const int renderLayerCnt, const int camRenderLayerCnt, RenderLayerCreateInfo *renderLayerCreateInfos, const Color bgColor = Color::create_black()) : m_bgColor(bgColor), m_renderer(create_renderer(renderLayerCnt, camRenderLayerCnt, renderLayerCreateInfos, memArena))
     {
     }
 
@@ -29,11 +30,13 @@ public:
 
     inline void draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const
     {
-        m_renderer.draw(internalShaderProgs, assets, windowSize);
+        render(m_renderer, assets, internalShaderProgs, m_cam, windowSize);
     }
 
 protected:
+    const Color m_bgColor;
     Renderer m_renderer;
+    Camera m_cam;
 };
 
 template<typename T>
@@ -44,5 +47,6 @@ inline SceneFactory create_scene_factory()
         return std::make_unique<T>(assets, windowSize);
     };
 }
+#endif
 
 }

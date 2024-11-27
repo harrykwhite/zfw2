@@ -1,5 +1,6 @@
 #include "world_scene.h"
 
+#if 0
 WorldScene::WorldScene(const zfw2::Assets &assets, const zfw2_common::Vec2DInt windowSize) : Scene(assets, windowSize, zfw2::Color::create_green())
 {
     m_renderer.add_layer("Enemies", 128);
@@ -15,3 +16,4 @@ void WorldScene::on_tick(const zfw2::InputManager &inputManager, zfw2::SoundSrcC
 {
     m_renderer.write_to_sprite_batch_slot(m_playerSpriteBatchSlotKey, assets, m_playerPos, {0, 0, 16, 16}, {0.5f, 0.5f});
 }
+#endif

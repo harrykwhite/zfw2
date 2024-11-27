@@ -2,6 +2,7 @@
 
 #include <zfw2/scenes.h>
 
+#if 0
 class WorldScene : public zfw2::Scene
 {
 public:
@@ -12,3 +13,4 @@ private:
     zfw2::SpriteBatchSlotKey m_playerSpriteBatchSlotKey = {};
     zfw2_common::Vec2D m_playerPos = {};
 };
+#endif

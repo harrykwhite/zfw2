@@ -15,11 +15,11 @@ static void release_sound_src_by_index(const int index, SoundSrcCollection &srcs
     srcs.alIDs[index] = 0;
 }
 
-static void load_music_buf_data(const ALID bufALID, const MusicSrc &src, const Assets &assets, MemArena &memArena)
+static void load_music_buf_data(const ALID bufALID, const MusicSrc &src, const Assets &assets)
 {
     assert(bufALID);
 
-    const auto buf = memArena.alloc<zfw2_common::AudioSample>(MusicSrc::k_musicBufSampleCnt);
+    const auto buf = mem_arena_alloc<zfw2_common::AudioSample>(MusicSrc::k_musicBufSampleCnt);
     const int bytesRead = std::fread(buf, 1, MusicSrc::k_musicBufSize, src.fs);
 
     if (gk_musicDebugMsgsEnabled)
@@ -37,11 +37,9 @@ static void load_music_buf_data(const ALID bufALID, const MusicSrc &src, const A
 
     const ALenum format = metadata.channelCnt == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
     alBufferData(bufALID, format, buf, bytesRead, metadata.sampleRate);
-
-    memArena.rewind();
 }
 
-void clean_sound_srcs(SoundSrcCollection &srcs)
+void clean_sound_srcs(const SoundSrcCollection &srcs)
 {
     for (int i = 0; i < SoundSrcCollection::k_srcLimit; ++i)
     {
@@ -50,8 +48,6 @@ void clean_sound_srcs(SoundSrcCollection &srcs)
             alDeleteSources(1, &srcs.alIDs[i]);
         }
     }
-
-    srcs = {};
 }
 
 SoundSrcID create_sound_src(const int soundIndex, SoundSrcCollection &srcs, const Assets &assets)
@@ -125,7 +121,7 @@ void handle_auto_release_sound_srcs(SoundSrcCollection &srcs)
     }
 }
 
-void clean_music_srcs(MusicSrcCollection &collection)
+void clean_music_srcs(const MusicSrcCollection &collection)
 {
     for (int i = 0; i < MusicSrcCollection::k_srcLimit; ++i)
     {
@@ -143,11 +139,9 @@ void clean_music_srcs(MusicSrcCollection &collection)
             }
         }
     }
-
-    collection = {};
 }
 
-MusicSrcID add_music_src(const int musicIndex, MusicSrcCollection &collection, const Assets &assets, MemArena &memArena)
+MusicSrcID add_music_src(const int musicIndex, MusicSrcCollection &collection, const Assets &assets)
 {
     for (int i = 0; i < MusicSrcCollection::k_srcLimit; ++i)
     {
@@ -167,7 +161,7 @@ MusicSrcID add_music_src(const int musicIndex, MusicSrcCollection &collection, c
     assert(false);
 }
 
-bool play_music_src(const MusicSrcID id, MusicSrcCollection &collection, const Assets &assets, MemArena &memArena)
+bool play_music_src(const MusicSrcID id, MusicSrcCollection &collection, const Assets &assets)
 {
     assert(id.index >= 0 && id.index < MusicSrcCollection::k_srcLimit);
     assert(collection.versions[id.index] == id.version);
@@ -187,7 +181,7 @@ bool play_music_src(const MusicSrcID id, MusicSrcCollection &collection, const A
     // Set up and queue buffers.
     for (int i = 0; i < MusicSrc::k_musicBufCnt; ++i)
     {
-        load_music_buf_data(src.bufALIDs[i], src, assets, memArena);
+        load_music_buf_data(src.bufALIDs[i], src, assets);
     }
 
     alSourceQueueBuffers(src.alID, MusicSrc::k_musicBufCnt, src.bufALIDs);
@@ -213,7 +207,7 @@ void release_music_src(const MusicSrcID srcID, MusicSrcCollection &collection)
     collection.activity.reset(srcID.index);
 }
 
-void refresh_music_srcs(MusicSrcCollection &collection, const Assets &assets, MemArena &memArena)
+void refresh_music_srcs(MusicSrcCollection &collection, const Assets &assets)
 {
     for (int i = 0; i < MusicSrcCollection::k_srcLimit; ++i)
     {
@@ -235,7 +229,7 @@ void refresh_music_srcs(MusicSrcCollection &collection, const Assets &assets, Me
             ALID bufALID;
             alSourceUnqueueBuffers(src.alID, 1, &bufALID);
 
-            load_music_buf_data(bufALID, src, assets, memArena);
+            load_music_buf_data(bufALID, src, assets);
 
             alSourceQueueBuffers(src.alID, 1, &bufALID);
 

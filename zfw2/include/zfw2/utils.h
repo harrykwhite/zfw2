@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 #include <zfw2_common/misc.h>
 #include <AL/al.h>
+#include "memory.h"
 
 namespace zfw2
 {
@@ -13,55 +14,60 @@ namespace zfw2
 using GLID = GLuint;
 using ALID = ALuint;
 
-class DynamicBitset
+struct HeapBitset
 {
-public:
-    DynamicBitset() = default;
-    DynamicBitset(const int bitCnt);
-
-    void resize(const int bitCnt);
-    int get_first_inactive_bit_index() const; // Returns -1 if all bits are active.
-    bool is_full() const;
-    bool is_clear() const;
-
-    inline int get_bit_cnt() const
-    {
-        return m_bitCnt;
-    }
-
-    inline void fill()
-    {
-        std::fill(m_bytes.get(), m_bytes.get() + m_byteCnt, 0xFF);
-    }
-
-    inline void clear()
-    {
-        std::fill(m_bytes.get(), m_bytes.get() + m_byteCnt, 0);
-    }
-
-    inline void activate_bit(const int bit_index)
-    {
-        assert(bit_index >= 0 && bit_index < m_bitCnt);
-        m_bytes[bit_index / 8] |= static_cast<unsigned char>(1) << (bit_index % 8);
-    }
-
-    inline void deactivate_bit(const int bit_index)
-    {
-        assert(bit_index >= 0 && bit_index < m_bitCnt);
-        m_bytes[bit_index / 8] &= ~(static_cast<unsigned char>(1) << (bit_index % 8));
-    }
-
-    inline bool is_bit_active(const int bit_index) const
-    {
-        assert(bit_index >= 0 && bit_index < m_bitCnt);
-        return m_bytes[bit_index / 8] & (static_cast<unsigned char>(1) << (bit_index % 8));
-    }
-
-private:
-    std::unique_ptr<zfw2_common::Byte[]> m_bytes;
-    int m_byteCnt = 0;
-    int m_bitCnt = 0;
+    zfw2_common::Byte *bytes;
+    int byteCnt;
+    int bitCnt;
 };
+
+bool is_heap_bitset_full(const HeapBitset &bitset);
+int find_first_inactive_bit_in_heap_bitset(const HeapBitset &bitset);
+
+inline HeapBitset create_heap_bitset(HeapBitset &bitset, const int bitCnt)
+{
+    const int byteCnt = (bitCnt + 7) & ~7;
+
+    return {
+        .bytes = mem_arena_alloc<zfw2_common::Byte>(byteCnt),
+        .byteCnt = byteCnt,
+        .bitCnt = bitCnt
+    };
+}
+
+inline HeapBitset create_heap_bitset(const int bitCnt)
+{
+    const int byteCnt = (bitCnt + 7) & ~7;
+
+    return {
+        .bytes = mem_arena_alloc<zfw2_common::Byte>(byteCnt),
+        .byteCnt = byteCnt,
+        .bitCnt = bitCnt
+    };
+}
+
+inline void activate_heap_bitset_bit(HeapBitset &bitset, const int bitIndex)
+{
+    assert(bitIndex >= 0 && bitIndex < bitset.bitCnt);
+    bitset.bytes[bitIndex / 8] |= static_cast<zfw2_common::Byte>(1) << (bitIndex % 8);
+}
+
+inline void deactivate_heap_bitset_bit(HeapBitset &bitset, const int bitIndex)
+{
+    assert(bitIndex >= 0 && bitIndex < bitset.bitCnt);
+    bitset.bytes[bitIndex / 8] &= ~(static_cast<zfw2_common::Byte>(1) << (bitIndex % 8));
+}
+
+inline bool is_heap_bitset_bit_active(const HeapBitset &bitset, const int bitIndex)
+{
+    assert(bitIndex >= 0 && bitIndex < bitset.bitCnt);
+    return bitset.bytes[bitIndex / 8] & (static_cast<zfw2_common::Byte>(1) << (bitIndex % 8));
+}
+
+inline void clear_heap_bitset(HeapBitset &bitset)
+{
+    std::memset(bitset.bytes, 0, bitset.byteCnt);
+}
 
 constexpr inline int get_bit_to_byte_cnt(const int bitCnt)
 {

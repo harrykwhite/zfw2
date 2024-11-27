@@ -1,7 +1,7 @@
 #include <zfw2/game.h>
 
 #include <iostream>
-
+#include <array>
 #include <glad/glad.h>
 #include <zfw2_common/assets.h>
 
@@ -16,8 +16,9 @@ struct GameCleanupInfo
     ALCcontext *alContext;
     const Assets *assets;
     const InternalShaderProgs *internalShaderProgs;
-    SoundSrcCollection *soundSrcs;
-    MusicSrcCollection *musicSrcCollection;
+    Renderer *renderer;
+    const SoundSrcCollection *soundSrcs;
+    const MusicSrcCollection *musicSrcCollection;
 };
 
 static void clean_game(GameCleanupInfo &cleanupInfo)
@@ -30,6 +31,11 @@ static void clean_game(GameCleanupInfo &cleanupInfo)
     if (cleanupInfo.soundSrcs)
     {
         clean_sound_srcs(*cleanupInfo.soundSrcs);
+    }
+
+    if (cleanupInfo.renderer)
+    {
+        clean_renderer(*cleanupInfo.renderer);
     }
 
     if (cleanupInfo.internalShaderProgs)
@@ -83,7 +89,7 @@ static inline void glfw_scroll_callback(GLFWwindow *const window, const double x
     *scroll = static_cast<int>(yOffs);
 }
 
-void run_game(const SceneFactory &initSceneFactory)
+void run_game()
 {
     GameCleanupInfo cleanupInfo = {};
 
@@ -169,9 +175,23 @@ void run_game(const SceneFactory &initSceneFactory)
     const InternalShaderProgs internalShaderProgs = load_internal_shader_progs();
     cleanupInfo.internalShaderProgs = &internalShaderProgs;
 
-    // Enable blending.
+    // Set up rendering.
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    Camera cam = {
+        .pos = {},
+        .scale = 2.0f
+    };
+
+    constexpr int renderLayerCnt = 2;
+    const RenderLayerCreateInfo renderLayerCreateInfos[renderLayerCnt] = {
+        {1, 1024, 1},
+        {1, 1024, 1}
+    };
+
+    Renderer renderer = make_renderer(renderLayerCnt, 1, renderLayerCreateInfos);
+    cleanupInfo.renderer = &renderer;
 
     // Set up input.
     InputManager inputManager;
@@ -180,16 +200,11 @@ void run_game(const SceneFactory &initSceneFactory)
     glfwSetWindowUserPointer(glfwWindow, &glfwCallbackMouseScroll);
 
     // Set up audio.
-    MemArena memArena(1024 * 1024 * 128); // TEMP
-
     SoundSrcCollection soundSrcs = {};
     cleanupInfo.soundSrcs = &soundSrcs;
 
     MusicSrcCollection musicSrcCollection = {};
     cleanupInfo.musicSrcCollection = &musicSrcCollection;
-
-    // Create the initial scene.
-    std::unique_ptr<Scene> m_scene = initSceneFactory(assets, get_glfw_window_size(glfwWindow));
 
     // Show the window now that things have been set up.
     glfwShowWindow(glfwWindow);
@@ -211,7 +226,6 @@ void run_game(const SceneFactory &initSceneFactory)
         if (windowSize != windowSizeBeforePoll)
         {
             glViewport(0, 0, windowSize.x, windowSize.y);
-            m_scene->on_window_resize(windowSize);
         }
 
         const double frameTimeLast = frameTime;
@@ -230,31 +244,20 @@ void run_game(const SceneFactory &initSceneFactory)
 
             // Update audio.
             handle_auto_release_sound_srcs(soundSrcs);
-            refresh_music_srcs(musicSrcCollection, assets, memArena);
+            refresh_music_srcs(musicSrcCollection, assets);
 
             // Execute ticks.
             int i = 0;
 
             do
             {
-                SceneFactory sceneChangeFactory; // This will be assigned if a scene change is requested.
-
-                m_scene->on_tick(inputManager, soundSrcs, musicSrcCollection, assets, sceneChangeFactory);
-
-                if (sceneChangeFactory)
-                {
-                    m_scene = sceneChangeFactory(assets, get_glfw_window_size(glfwWindow));
-                }
-
                 frameDurAccum -= gk_targTickDur;
-
                 ++i;
             }
             while (i < tickCnt);
         }
 
-        m_scene->draw(internalShaderProgs, assets, get_glfw_window_size(glfwWindow));
-
+        render(renderer, Colors::make_black(), assets, internalShaderProgs, cam, windowSize);
         glfwSwapBuffers(glfwWindow);
     }
 

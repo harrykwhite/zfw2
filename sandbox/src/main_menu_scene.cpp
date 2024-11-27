@@ -2,6 +2,7 @@
 
 #include "world_scene.h"
 
+#if 0
 MainMenuScene::MainMenuScene(const zfw2::Assets &assets, const zfw2_common::Vec2DInt windowSize) : Scene(assets, windowSize)
 {
     m_renderer.add_layer("All", 8);
@@ -27,3 +28,4 @@ void MainMenuScene::on_window_resize(const zfw2_common::Vec2DInt windowSize)
     m_renderer.set_char_batch_pos(m_titleTextCharBatchKey, get_title_text_pos(windowSize));
     m_renderer.set_char_batch_pos(m_startTextCharBatchKey, get_start_text_pos(windowSize));
 }
+#endif

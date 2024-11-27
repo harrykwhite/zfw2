@@ -7,45 +7,65 @@
 namespace zfw2
 {
 
-class MemArena
+constexpr int gk_memArenaSize = (1 << 20) * 128;
+
+extern zfw2_common::Byte g_memArena[gk_memArenaSize];
+extern int g_memArenaOffs;
+
+#if 0
+struct MemArena
 {
-public:
-    MemArena(const int size) : m_buf(new zfw2_common::Byte[size])
+    zfw2_common::Byte *buf;
+    int bufSize;
+    int bufOffs;
+};
+
+inline bool init_mem_arena(MemArena &arena, const int size)
+{
+    assert(size > 0);
+
+    arena = {};
+
+    arena.buf = reinterpret_cast<zfw2_common::Byte *>(std::malloc(size));
+
+    if (!arena.buf)
     {
+        return false;
     }
 
-    template<typename T>
-    T *alloc(const int cnt)
-    {
-        assert(cnt > 0);
-        const int size = cnt * sizeof(T);
-        m_bufOffs += size;
-        m_rewindSize = size;
-        return reinterpret_cast<T *>(m_buf.get() + m_bufOffs);
-    }
+    std::memset(arena.buf, 0, size);
 
-    template<typename T>
-    T *alloc_and_clear(const int cnt)
-    {
-        assert(cnt > 0);
+    arena.bufSize = size;
+}
 
-        T *const ptr = alloc<T>(cnt);
-        std::fill(ptr, ptr + cnt, T());
+inline void clean_mem_arena(MemArena &arena)
+{
+    std::free(arena.buf);
+    arena = {};
+}
+#endif
+
+template<typename T>
+T *mem_arena_alloc(const int cnt)
+{
+    if (cnt > 0)
+    {
+        T *const ptr = reinterpret_cast<T *>(g_memArena + g_memArenaOffs);
+        g_memArenaOffs += sizeof(T) * cnt;
         return ptr;
     }
 
-    // Undos the most recent allocation. This is useful for temporary buffers.
-    void rewind()
-    {
-        assert(m_rewindSize > 0);
-        m_bufOffs -= m_rewindSize;
-        m_rewindSize = 0;
-    }
+    assert(!cnt);
 
-private:
-    const std::unique_ptr<zfw2_common::Byte> m_buf;
-    int m_bufOffs = 0;
-    int m_rewindSize = 0;
-};
+    return nullptr;
+}
+
+#if 0
+inline void clear_mem_arena(MemArena &arena)
+{
+    std::memset(arena.buf, 0, arena.bufSize);
+    arena.bufOffs = 0;
+}
+#endif
 
 }

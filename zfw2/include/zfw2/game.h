@@ -13,6 +13,6 @@ constexpr int gk_glVersionMinor = 1;
 constexpr int gk_targTicksPerSec = 60;
 constexpr double gk_targTickDur = 1.0 / gk_targTicksPerSec;
 
-void run_game(const SceneFactory &initSceneFactory);
+void run_game();
 
 }

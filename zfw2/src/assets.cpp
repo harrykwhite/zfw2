@@ -13,12 +13,12 @@ layout (location = 0) in vec2 a_vert;
 layout (location = 1) in vec2 a_pos;
 layout (location = 2) in vec2 a_size;
 layout (location = 3) in float a_rot;
-layout (location = 4) in float a_tex_index;
-layout (location = 5) in vec2 a_tex_coord;
+layout (location = 4) in float a_texIndex;
+layout (location = 5) in vec2 a_texCoord;
 layout (location = 6) in float a_alpha;
 
-out flat int v_tex_index;
-out vec2 v_tex_coord;
+out flat int v_texIndex;
+out vec2 v_texCoord;
 out float v_alpha;
 
 uniform mat4 u_view;
@@ -26,83 +26,85 @@ uniform mat4 u_proj;
 
 void main()
 {
-    float rot_cos = cos(a_rot);
-    float rot_sin = -sin(a_rot);
+    float rotCos = cos(a_rot);
+    float rotSin = -sin(a_rot);
 
     mat4 model = mat4(
-        vec4(a_size.x * rot_cos, a_size.x * rot_sin, 0.0f, 0.0f),
-        vec4(a_size.y * -rot_sin, a_size.y * rot_cos, 0.0f, 0.0f),
+        vec4(a_size.x * rotCos, a_size.x * rotSin, 0.0f, 0.0f),
+        vec4(a_size.y * -rotSin, a_size.y * rotCos, 0.0f, 0.0f),
         vec4(0.0f, 0.0f, 1.0f, 0.0f),
         vec4(a_pos.x, a_pos.y, 0.0f, 1.0f)
     );
 
     gl_Position = u_proj * u_view * model * vec4(a_vert, 0.0f, 1.0f);
 
-    v_tex_index = int(a_tex_index);
-    v_tex_coord = a_tex_coord;
+    v_texIndex = int(a_texIndex);
+    v_texCoord = a_texCoord;
     v_alpha = a_alpha;
 }
 )";
 
 const std::string gk_spriteQuadFragShaderSrc = R"(#version 430 core
 
-in flat int v_tex_index;
-in vec2 v_tex_coord;
+in flat int v_texIndex;
+in vec2 v_texCoord;
 in float v_alpha;
 
-out vec4 o_frag_color;
+out vec4 o_fragColor;
 
 uniform sampler2D u_textures[32];
 
 void main()
 {
-    vec4 tex_color = texture(u_textures[v_tex_index], v_tex_coord);
-    o_frag_color = tex_color * vec4(1.0f, 1.0f, 1.0f, v_alpha);
+    vec4 texColor = texture(u_textures[v_texIndex], v_texCoord);
+    o_fragColor = texColor * vec4(1.0f, 1.0f, 1.0f, v_alpha);
 }
 )";
 
 const std::string gk_charQuadVertShaderSrc = R"(#version 430 core
 
 layout (location = 0) in vec2 a_vert;
-layout (location = 1) in vec2 a_tex_coord;
+layout (location = 1) in vec2 a_texCoord;
 
-out vec2 v_tex_coord;
+out vec2 v_texCoord;
 
 uniform vec2 u_pos;
 uniform float u_rot;
+
 uniform mat4 u_proj;
+uniform mat4 u_view;
 
 void main()
 {
-    float rot_cos = cos(u_rot);
-    float rot_sin = sin(u_rot);
+    float rotCos = cos(u_rot);
+    float rotSin = sin(u_rot);
 
     mat4 model = mat4(
-        vec4(rot_cos, rot_sin, 0.0f, 0.0f),
-        vec4(-rot_sin, rot_cos, 0.0f, 0.0f),
+        vec4(rotCos, rotSin, 0.0f, 0.0f),
+        vec4(-rotSin, rotCos, 0.0f, 0.0f),
         vec4(0.0f, 0.0f, 1.0f, 0.0f),
         vec4(u_pos.x, u_pos.y, 0.0f, 1.0f)
     );
 
-    gl_Position = u_proj * model * vec4(a_vert, 0.0f, 1.0f);
+    gl_Position = u_proj * u_view * model * vec4(a_vert, 0.0f, 1.0f);
 
-    v_tex_coord = a_tex_coord;
+    v_texCoord = a_texCoord;
 }
 )";
 
 const std::string gk_charQuadFragShaderSrc = R"(#version 430 core
 
-in vec2 v_tex_coord;
+in vec2 v_texCoord;
 
-out vec4 o_frag_color;
+out vec4 o_fragColor;
 
 uniform vec4 u_blend;
 uniform sampler2D u_tex;
 
 void main()
 {
-    vec4 tex_color = texture(u_tex, v_tex_coord);
-    o_frag_color = tex_color * u_blend;
+    vec4 texColor = texture(u_tex, v_texCoord);
+    o_fragColor = texColor * u_blend;
 }
 )";
 

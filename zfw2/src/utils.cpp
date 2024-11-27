@@ -3,64 +3,40 @@
 namespace zfw2
 {
 
-DynamicBitset::DynamicBitset(const int bitCnt) : m_bitCnt(bitCnt), m_byteCnt(get_bit_to_byte_cnt(bitCnt))
+bool is_heap_bitset_full(const HeapBitset &bitset)
 {
-    assert(m_byteCnt > 0);
-    m_bytes = std::make_unique<zfw2_common::Byte[]>(m_byteCnt);
-}
-
-void DynamicBitset::resize(const int bitCnt)
-{
-    assert(bitCnt > 0);
-
-    m_bitCnt = bitCnt;
-
-    const int byteCntLast = m_byteCnt;
-    m_byteCnt = get_bit_to_byte_cnt(bitCnt);
-
-    if (m_byteCnt != byteCntLast)
+    for (int i = 0; i < bitset.byteCnt; ++i)
     {
-        m_bytes = std::make_unique<zfw2_common::Byte[]>(m_byteCnt);
-    }
-}
-
-int DynamicBitset::get_first_inactive_bit_index() const
-{
-    for (int i = 0; i < m_bitCnt; ++i)
-    {
-        if (!is_bit_active(i))
+        if (bitset.bytes[i] != 0xFF)
         {
-            return i;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int find_first_inactive_bit_in_heap_bitset(const HeapBitset &bitset)
+{
+    for (int i = 0; i < bitset.byteCnt; ++i)
+    {
+        if (bitset.bytes[i] == 0xFF)
+        {
+            continue;
+        }
+
+        for (int j = 0; j < 8; ++j)
+        {
+            const int bitIndex = (i * 8) + j;
+
+            if (!is_heap_bitset_bit_active(bitset, bitIndex))
+            {
+                return bitIndex;
+            }
         }
     }
 
     return -1;
-}
-
-bool DynamicBitset::is_full() const
-{
-    for (int i = 0; i < m_byteCnt; ++i)
-    {
-        if (m_bytes[i] != 0xFF)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool DynamicBitset::is_clear() const
-{
-    for (int i = 0; i < m_byteCnt; ++i)
-    {
-        if (m_bytes[i] != 0)
-        {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 }

@@ -56,17 +56,17 @@ struct MusicSrcCollection
     int versions[k_srcLimit];
 };
 
-void clean_sound_srcs(SoundSrcCollection &srcs);
+void clean_sound_srcs(const SoundSrcCollection &srcs);
 SoundSrcID create_sound_src(const int soundIndex, SoundSrcCollection &srcs, const Assets &assets);
 void release_sound_src(const SoundSrcID srcID, SoundSrcCollection &srcs);
 void play_sound_src(const SoundSrcID srcID, const SoundSrcCollection &srcs, const Assets &assets, const float gain = 1.0f, const float pitch = 1.0f);
 void create_and_play_sound_src(const int soundIndex, SoundSrcCollection &srcs, const Assets &assets, const float gain = 1.0f, const float pitch = 1.0f);
 void handle_auto_release_sound_srcs(SoundSrcCollection &srcs);
 
-void clean_music_srcs(MusicSrcCollection &collection);
-MusicSrcID add_music_src(const int musicIndex, MusicSrcCollection &collection, const Assets &assets, MemArena &memArena);
-bool play_music_src(const MusicSrcID id, MusicSrcCollection &collection, const Assets &assets, MemArena &memArena);
+void clean_music_srcs(const MusicSrcCollection &collection);
+MusicSrcID add_music_src(const int musicIndex, MusicSrcCollection &collection, const Assets &assets);
+bool play_music_src(const MusicSrcID id, MusicSrcCollection &collection, const Assets &assets);
 void release_music_src(const MusicSrcID srcID, MusicSrcCollection &collection);
-void refresh_music_srcs(MusicSrcCollection &collection, const Assets &assets, MemArena &memArena);
+void refresh_music_srcs(MusicSrcCollection &collection, const Assets &assets);
 
 }

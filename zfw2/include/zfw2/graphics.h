@@ -4,12 +4,22 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <functional>
 #include <zfw2_common/math.h>
 #include "assets.h"
 #include "utils.h"
+#include "memory.h"
 
 namespace zfw2
 {
+
+constexpr int gk_texUnitLimitCap = 32;
+
+constexpr int gk_renderLayerLimit = 16;
+constexpr int gk_renderLayerSpriteBatchLimit = 10;
+constexpr int gk_renderLayerCharBatchLimit = 24;
+constexpr int gk_spriteBatchSlotLimit = 1024;
+constexpr int gk_charBatchSlotLimit = 1024;
 
 enum class FontAlignHor
 {
@@ -28,21 +38,19 @@ enum class FontAlignVer
 struct Color
 {
     float r, g, b, a;
-
-    static constexpr Color create_white() { return {1.0f, 1.0f, 1.0f, 1.0f}; }
-    static constexpr Color create_black() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
-    static constexpr Color create_red() { return {1.0f, 0.0f, 0.0f, 1.0f}; }
-    static constexpr Color create_green() { return {0.0f, 1.0f, 0.0f, 1.0f}; }
-    static constexpr Color create_blue() { return {0.0f, 0.0f, 1.0f, 1.0f}; }
-    static constexpr Color create_yellow() { return {1.0f, 1.0f, 0.0f, 1.0f}; }
-    static constexpr Color create_cyan() { return {0.0f, 1.0f, 1.0f, 1.0f}; }
-    static constexpr Color create_magenta() { return {1.0f, 0.0f, 1.0f, 1.0f}; }
 };
 
-struct Camera
+struct QuadBufGLIDs
 {
-    zfw2_common::Vec2D pos;
-    float scale;
+    GLID vertArrayGLID;
+    GLID vertBufGLID;
+    GLID elemBufGLID;
+};
+
+struct SpriteBatchTexUnitInfo
+{
+    int texIndex;
+    int refCnt;
 };
 
 struct SpriteBatchSlotKey
@@ -52,257 +60,127 @@ struct SpriteBatchSlotKey
     int slotIndex;
 };
 
+struct SpriteBatchSlotWriteData
+{
+    const zfw2_common::Vec2D pos;
+    const zfw2_common::Rect srcRect;
+    const zfw2_common::Vec2D origin;
+    const float rot;
+    const zfw2_common::Vec2D scale;
+    const float alpha;
+};
+
+struct CharBatchDisplayProps
+{
+    zfw2_common::Vec2D pos;
+    float rot;
+    Color blend;
+};
+
 struct CharBatchKey
 {
     int layerIndex;
     int batchIndex;
 };
 
-constexpr int gk_texUnitLimitCap = 32;
-
-class SpriteBatch
+struct SpriteBatches
 {
-public:
-    SpriteBatch(const int slotCnt);
-    ~SpriteBatch();
-    SpriteBatch(const SpriteBatch &other) = delete;
-    SpriteBatch &operator=(const SpriteBatch &other) = delete;
-    SpriteBatch(SpriteBatch &&other) noexcept;
-    SpriteBatch &operator=(SpriteBatch &&other) noexcept;
+    QuadBufGLIDs *quadBufGLIDs;
 
-    // Provide nullptr as the cam argument if not wanting to draw with a camera view matrix.
-    void draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const;
+    int *slotTexUnits;
+    SpriteBatchTexUnitInfo *texUnits;
 
-    int take_any_slot(const int texIndex);
-    void release_slot(const int slotIndex);
-    void write_to_slot(const int slotIndex, const Assets &assets, const zfw2_common::Vec2D pos, const zfw2_common::Rect &src_rect, const zfw2_common::Vec2D origin, const float rot, const zfw2_common::Vec2D scale, const float alpha) const;
-    void clear_slot(const int slotIndex) const;
-
-private:
-    GLID m_vertArrayGLID = 0;
-    GLID m_vertBufGLID = 0;
-    GLID m_elemBufGLID = 0;
-
-    int m_slotCnt;
-    DynamicBitset m_slotActivity;
-    std::unique_ptr<int[]> m_slotTexUnits; // What texture unit each slot is mapped to.
-
-    int m_texUnitTexIndexes[gk_texUnitLimitCap] = {}; // What texture index (of an actual texture asset) each unit maps to.
-    int m_texUnitRefCnts[gk_texUnitLimitCap] = {}; // How many slots are mapped to each unit.
-
-    int find_tex_unit_to_use(const int texIndex) const;
+    HeapBitset slotActivity[gk_renderLayerSpriteBatchLimit];
 };
 
-class CharBatch
+struct CharBatches
 {
-public:
-    zfw2_common::Vec2D m_pos;
-    float m_rot = 0.0f;
-    Color m_blend = Color::create_white();
-
-    CharBatch(const int slotCnt, const int fontIndex, const zfw2_common::Vec2D pos);
-    ~CharBatch();
-    CharBatch(const CharBatch &) = delete;
-    CharBatch &operator=(const CharBatch &) = delete;
-    CharBatch(CharBatch &&) noexcept;
-    CharBatch &operator=(CharBatch &&other) noexcept;
-
-    void write(const std::string &text, const FontAlignHor alignHor, const FontAlignVer alignVer, const Assets &assets);
-    void draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const;
-
-private:
-    GLID m_vertArrayGLID = 0;
-    GLID m_vertBufGLID = 0;
-    GLID m_elemBufGLID = 0;
-
-    int m_activeSlotCnt = 0; // Effectively the length of the last written text (one slot per character).
-    int m_slotCnt;
-
-    int m_fontIndex;
+    int *slotCnts;
+    QuadBufGLIDs *quadBufGLIDs;
+    int *fontIndexes;
+    CharBatchDisplayProps *displayProps;
 };
 
-class RenderLayer
+inline int get_tex_unit_limit();
+
+struct RenderLayer
 {
-public:
-    RenderLayer(const int defaultSpriteBatchSlotCnt) : m_defaultSpriteBatchSlotCnt(defaultSpriteBatchSlotCnt) {}
+    int spriteBatchCnt;
+    int spriteBatchSlotCnt; // All sprite batches in the same layer have the same slot count.
 
-    void draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const;
+    int charBatchCnt;
 
-    void take_any_sprite_batch_slot(const int texIndex, int &batchIndex, int &slotIndex);
-    int add_char_batch(const int slotCnt, const int fontIndex, const zfw2_common::Vec2D pos);
+    SpriteBatches spriteBatches;
+    CharBatches charBatches;
 
-    inline void release_sprite_batch_slot(const int batchIndex, const int slotIndex)
+    HeapBitset spriteBatchActivity;
+    HeapBitset charBatchActivity;
+
+    inline int get_sprite_batch_slot_tex_unit(const int batchIndex, const int slotIndex) const
     {
-        m_spriteBatches[batchIndex].release_slot(slotIndex);
+        return spriteBatches.slotTexUnits[(batchIndex * spriteBatchSlotCnt) + slotIndex];
     }
 
-    inline void write_to_sprite_batch_slot(const int batchIndex, const int slotIndex, const Assets &assets, const zfw2_common::Vec2D pos, const zfw2_common::Rect &srcRect, const zfw2_common::Vec2D origin, const float rot, const zfw2_common::Vec2D scale, const float alpha) const
+    inline SpriteBatchTexUnitInfo get_sprite_batch_tex_unit_info(const int batchIndex, const int texUnit) const
     {
-        m_spriteBatches[batchIndex].write_to_slot(slotIndex, assets, pos, srcRect, origin, rot, scale, alpha);
+        return spriteBatches.texUnits[(batchIndex * get_tex_unit_limit()) + texUnit];
     }
-
-    inline void clear_sprite_batch_slot(const int batchIndex, const int slotIndex) const
-    {
-        m_spriteBatches[batchIndex].clear_slot(slotIndex);
-    }
-
-    inline void deactivate_char_batch(const int batchIndex)
-    {
-        assert(m_charBatchActivity.is_bit_active(batchIndex));
-        m_charBatchActivity.deactivate_bit(batchIndex);
-    }
-
-    inline void write_to_char_batch(const int batchIndex, const std::string &text, const FontAlignHor alignHor, const FontAlignVer alignVer, const Assets &assets)
-    {
-        assert(m_charBatchActivity.is_bit_active(batchIndex));
-        m_charBatches[batchIndex].write(text, alignHor, alignVer, assets);
-    }
-
-    inline zfw2_common::Vec2D get_char_batch_pos(const int batchIndex) const
-    {
-        return m_charBatches[batchIndex].m_pos;
-    }
-
-    inline void set_char_batch_pos(const int batchIndex, const zfw2_common::Vec2D pos)
-    {
-        m_charBatches[batchIndex].m_pos = pos;
-    }
-
-    inline float get_char_batch_rot(const int batchIndex) const
-    {
-        return m_charBatches[batchIndex].m_rot;
-    }
-
-    inline void set_char_batch_rot(const int batchIndex, const float rot)
-    {
-        m_charBatches[batchIndex].m_rot = rot;
-    }
-
-    inline Color get_char_batch_blend(const int batchIndex) const
-    {
-        return m_charBatches[batchIndex].m_blend;
-    }
-
-    inline void set_char_batch_blend(const int batchIndex, const Color blend)
-    {
-        m_charBatches[batchIndex].m_blend = blend;
-    }
-
-private:
-    const int m_defaultSpriteBatchSlotCnt;
-    std::vector<SpriteBatch> m_spriteBatches;
-
-    std::vector<CharBatch> m_charBatches;
-    DynamicBitset m_charBatchActivity;
 };
 
-class Renderer
+struct RenderLayerCreateInfo
 {
-public:
-    Renderer(const Color bgColor) : m_bgColor(bgColor)
-    {
-    }
-
-    void draw(const InternalShaderProgs &internalShaderProgs, const Assets &assets, const zfw2_common::Vec2DInt windowSize) const;
-    SpriteBatchSlotKey take_any_sprite_batch_slot(const std::string &layerName, const int texIndex);
-
-    inline void add_layer(const std::string &name, const int defaultSpriteBatchSlotCnt)
-    {
-        assert(!m_layersLocked);
-        assert(m_layerNamesToIndexes.find(name) == m_layerNamesToIndexes.end());
-        assert(defaultSpriteBatchSlotCnt > 0 && defaultSpriteBatchSlotCnt % 8 == 0);
-        m_layerNamesToIndexes[name] = m_layers.size();
-        m_layers.emplace_back(defaultSpriteBatchSlotCnt);
-    }
-
-    inline void lock_layers()
-    {
-        assert(!m_layersLocked);
-        m_layersLocked = true;
-    }
-
-    inline void release_sprite_batch_slot(const SpriteBatchSlotKey &key)
-    {
-        assert(m_layersLocked);
-        m_layers[key.layerIndex].release_sprite_batch_slot(key.batchIndex, key.slotIndex);
-    }
-
-    inline void write_to_sprite_batch_slot(const SpriteBatchSlotKey &key, const Assets &assets, const zfw2_common::Vec2D pos, const zfw2_common::Rect &srcRect, const zfw2_common::Vec2D origin = {}, const float rot = 0.0f, const zfw2_common::Vec2D scale = {1.0f, 1.0f}, const float alpha = 1.0f) const
-    {
-        assert(m_layersLocked);
-        m_layers[key.layerIndex].write_to_sprite_batch_slot(key.batchIndex, key.slotIndex, assets, pos, srcRect, origin, rot, scale, alpha);
-    }
-
-    inline void clear_sprite_batch_slot(const SpriteBatchSlotKey &key) const
-    {
-        assert(m_layersLocked);
-        m_layers[key.layerIndex].clear_sprite_batch_slot(key.batchIndex, key.slotIndex);
-    }
-
-    inline CharBatchKey add_char_batch(const std::string &layerName, const int slotCnt, const int fontIndex, const zfw2_common::Vec2D pos)
-    {
-        assert(m_layersLocked);
-        CharBatchKey key;
-        key.layerIndex = m_layerNamesToIndexes[layerName];
-        key.batchIndex = m_layers[key.layerIndex].add_char_batch(slotCnt, fontIndex, pos);
-        return key;
-    }
-
-    inline void deactivate_char_batch(const CharBatchKey &key)
-    {
-        assert(m_layersLocked);
-        m_layers[key.layerIndex].deactivate_char_batch(key.batchIndex);
-    }
-
-    inline void write_to_char_batch(const CharBatchKey &key, const std::string &text, const FontAlignHor alignHor, const FontAlignVer alignVer, const Assets &assets)
-    {
-        assert(m_layersLocked);
-        m_layers[key.layerIndex].write_to_char_batch(key.batchIndex, text, alignHor, alignVer, assets);
-    }
-
-    inline zfw2_common::Vec2D get_char_batch_pos(const CharBatchKey &key) const
-    {
-        assert(m_layersLocked);
-        return m_layers[key.layerIndex].get_char_batch_pos(key.batchIndex);
-    }
-
-    inline void set_char_batch_pos(const CharBatchKey &key, const zfw2_common::Vec2D pos)
-    {
-        assert(m_layersLocked);
-        m_layers[key.layerIndex].set_char_batch_pos(key.batchIndex, pos);
-    }
-
-    inline float get_char_batch_rot(const CharBatchKey &key) const
-    {
-        assert(m_layersLocked);
-        return m_layers[key.layerIndex].get_char_batch_rot(key.batchIndex);
-    }
-
-    inline void set_char_batch_rot(const CharBatchKey &key, const float rot)
-    {
-        assert(m_layersLocked);
-        m_layers[key.layerIndex].set_char_batch_rot(key.batchIndex, rot);
-    }
-
-    inline Color get_char_batch_blend(const CharBatchKey &key) const
-    {
-        assert(m_layersLocked);
-        return m_layers[key.layerIndex].get_char_batch_blend(key.batchIndex);
-    }
-
-    inline void set_char_batch_blend(const CharBatchKey &key, const Color blend)
-    {
-        assert(m_layersLocked);
-        m_layers[key.layerIndex].set_char_batch_blend(key.batchIndex, blend);
-    }
-
-private:
-    std::vector<RenderLayer> m_layers;
-    std::unordered_map<std::string, int> m_layerNamesToIndexes;
-    bool m_layersLocked = false;
-
-    const Color m_bgColor;
+    int spriteBatchCnt;
+    int spriteBatchSlotCnt;
+    int charBatchCnt;
 };
+
+struct Renderer
+{
+    int layerCnt;
+    int camLayerCnt;
+
+    RenderLayer layers[gk_renderLayerLimit];
+};
+
+struct Camera
+{
+    zfw2_common::Vec2D pos;
+    float scale;
+};
+
+Renderer make_renderer(const int layerCnt, const int camLayerCnt, const RenderLayerCreateInfo *const layerCreateInfos);
+void clean_renderer(Renderer &renderer);
+void render(const Renderer &renderer, const Color &bgColor, const Assets &assets, const InternalShaderProgs &internalShaderProgs, const Camera &cam, const zfw2_common::Vec2DInt windowSize);
+
+RenderLayer make_render_layer(const RenderLayerCreateInfo &createInfo);
+void clean_render_layer(RenderLayer &layer);
+
+SpriteBatchSlotKey take_any_sprite_batch_slot(const int layerIndex, const int texIndex, Renderer &renderer);
+void release_sprite_batch_slot(const SpriteBatchSlotKey &key, Renderer &renderer);
+void write_to_sprite_batch_slot(const SpriteBatchSlotKey &key, const SpriteBatchSlotWriteData &writeData, const Renderer &renderer, const Assets &assets);
+void clear_sprite_batch_slot(const SpriteBatchSlotKey &key, const Renderer &renderer);
+
+CharBatchKey activate_any_char_batch_in_render_layer(const int layerIndex, const int slotCnt, const int fontIndex, const zfw2_common::Vec2D pos, Renderer &renderer, const Assets &assets);
+void deactivate_char_batch(const CharBatchKey &key, Renderer &renderer);
+void write_to_char_batch(const CharBatchKey &key, const std::string &text, const FontAlignHor alignHor, const FontAlignVer alignVer, Renderer &renderer, const Assets &assets);
+void clear_char_batch(const CharBatchKey &key, const Renderer &renderer);
+
+QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite);
+void clean_quad_buf(QuadBufGLIDs &glIDs);
+
+namespace Colors
+{
+
+constexpr Color make_white() { return {1.0f, 1.0f, 1.0f, 1.0f}; }
+constexpr Color make_black() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
+constexpr Color make_red() { return {1.0f, 0.0f, 0.0f, 1.0f}; }
+constexpr Color make_green() { return {0.0f, 1.0f, 0.0f, 1.0f}; }
+constexpr Color make_blue() { return {0.0f, 0.0f, 1.0f, 1.0f}; }
+constexpr Color make_yellow() { return {1.0f, 1.0f, 0.0f, 1.0f}; }
+constexpr Color make_cyan() { return {0.0f, 1.0f, 1.0f, 1.0f}; }
+constexpr Color make_magenta() { return {1.0f, 0.0f, 1.0f, 1.0f}; }
+
+}
 
 inline zfw2_common::Vec2D get_cam_to_screen_pos(const zfw2_common::Vec2D pos, const Camera &cam, const zfw2_common::Vec2DInt windowSize)
 {
